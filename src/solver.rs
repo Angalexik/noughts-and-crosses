@@ -380,6 +380,7 @@ mod tests {
     fn test_algo8() {
         let mut game = Game::new(4, 4, 3);
 
+        game.best_move(); // Create transposition table
         game.place((1, 1));
         game.place((1, 0));
 
