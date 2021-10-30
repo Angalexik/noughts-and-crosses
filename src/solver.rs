@@ -386,7 +386,7 @@ mod tests {
 
         game.board.print(true);
 
-        assert_eq!(game.best_move(), (2, 1))
+        assert_eq!(game.best_move(), (2, 1));
     }
 
     #[test]
