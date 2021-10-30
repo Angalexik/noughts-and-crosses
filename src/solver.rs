@@ -235,7 +235,7 @@ struct Score {
 }
 
 struct Solver {
-    transpostions: AHashMap<[Bitboard; 2], Score>
+    transpostions: AHashMap<([Bitboard; 2], i32), Score>
 }
 
 impl Solver {
@@ -316,8 +316,8 @@ impl Solver {
         }
 
 
-        if self.transpostions.contains_key(&board.bitboards) {
-            let position = self.transpostions.get(&board.bitboards).unwrap();
+        if self.transpostions.contains_key(&(board.bitboards, depth)) {
+            let position = self.transpostions.get(&(board.bitboards, depth)).unwrap();
             match position.flag {
                 ScoreType::Exact => return position.value,
                 ScoreType::LowerBound => alpha = max(alpha, position.value),
@@ -346,7 +346,7 @@ impl Solver {
             }
         }
 
-        self.transpostions.insert(board.bitboards, Score {
+        self.transpostions.insert((board.bitboards, depth), Score {
             value,
             flag: match value {
                 x if x <= orig_alpha => ScoreType::UpperBound,
