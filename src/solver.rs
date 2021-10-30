@@ -389,6 +389,21 @@ mod tests {
         assert_eq!(game.best_move(), (2, 1))
     }
 
+    #[test]
+    fn test_algo9() {
+        let mut game = Game::new(4, 4, 3);
+
+        game.best_move(); // Create transposition table
+        game.place((0, 1));
+        game.place((0, 2));
+        game.place((2, 3));
+        game.place((1, 2));
+
+        game.board.print(true);
+
+        assert_eq!(game.best_move(), (2, 2));
+    }
+
     // #[test]
     // fn test_placement() {
     //     let mut board = Board::new(5, 5, 3);
