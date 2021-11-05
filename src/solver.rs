@@ -270,7 +270,7 @@ impl Solver {
     // }
     
     fn best_move(&mut self, board: &Board) -> Move {
-        let player = match board.player {
+        let player: i8 = match board.player {
             Player::O => -1,
             Player::X => 1,
         };
@@ -284,7 +284,7 @@ impl Solver {
             // log!("{}-{}", row, col);
             let mut board2 = board.clone();
             board2.place(mov);
-            let score = -self.negamax(board2, INFINITY, NEGINFINITY, INFINITY, player as i8);
+            let score = -self.negamax(board2, INFINITY, NEGINFINITY, INFINITY, player);
             // println!("{:?} score: {}", mov, score);
             if score > best_score {
                 best_score = score;
