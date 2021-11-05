@@ -40,7 +40,7 @@ impl Game {
                 player: Player::X,
             },
             solver: Solver {
-                transpostions: AHashMap::new(),
+                transpositions: AHashMap::new(),
             }
         }
     }
@@ -239,7 +239,7 @@ struct Score {
 }
 
 struct Solver {
-    transpostions: AHashMap<([Bitboard; 2], i32), Score>
+    transpositions: AHashMap<([Bitboard; 2], i32), Score>
 }
 
 impl Solver {
@@ -320,8 +320,8 @@ impl Solver {
         }
 
 
-        if self.transpostions.contains_key(&(board.bitboards, depth)) {
-            let position = self.transpostions.get(&(board.bitboards, depth)).unwrap();
+        if self.transpositions.contains_key(&(board.bitboards, depth)) {
+            let position = self.transpositions.get(&(board.bitboards, depth)).unwrap();
             match position.flag {
                 ScoreType::Exact => return position.value,
                 ScoreType::LowerBound => alpha = max(alpha, position.value),
@@ -350,7 +350,7 @@ impl Solver {
             }
         }
 
-        self.transpostions.insert((board.bitboards, depth), Score {
+        self.transpositions.insert((board.bitboards, depth), Score {
             value,
             flag: match value {
                 x if x <= orig_alpha => ScoreType::UpperBound,
