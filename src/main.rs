@@ -58,9 +58,13 @@ fn main() {
                     .map(|num| num.parse::<u32>().unwrap())
                     .collect_tuple()
                     .unwrap();
-                game.place(mov);
-                check_game_end(&game);
-                cpuplay(&mut game);
+                if game.can_play(mov) {
+                    game.place(mov);
+                    check_game_end(&game);
+                    cpuplay(&mut game);
+                } else {
+                    println!("you can't play that")
+                }
             },
             Err(_) => {
                 println!("oh no");

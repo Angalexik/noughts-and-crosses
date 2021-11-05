@@ -52,6 +52,10 @@ impl Game {
     pub fn best_move(&mut self) -> Move {
         self.solver.best_move(&self.board)
     }
+
+    pub fn can_play(&self, mov: Move) -> bool {
+        return !self.board.over() && !self.board.occupied(self.board.get_index(mov.0, mov.1))
+    }
 }
 
 #[derive(Clone, Copy)]
