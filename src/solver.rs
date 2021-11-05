@@ -68,13 +68,13 @@ pub struct Board {
 }
 
 impl Board {
-    pub fn get_index(&self, row: u32, column: u32) -> u32 {
+    fn get_index(&self, row: u32, column: u32) -> u32 {
         let height = self.height + 1;
         let row = row + 1;
         height - 1 - row + (column * height)
     }
 
-    pub fn render(&self, debug: bool) -> String {
+    fn render(&self, debug: bool) -> String {
         let mut lines = String::new();
         for row in 0..self.height {
             let mut line = String::new();
@@ -111,7 +111,7 @@ impl Board {
         println!("{}", self.render(debug));
     }
 
-    pub fn occupied(&self, idx: u32) -> bool {
+    fn occupied(&self, idx: u32) -> bool {
         let mask = 1 << idx;
         (self.bitboards[0] | self.bitboards[1]) & mask != 0
         // (self.bitboards[Player::X as usize] & mask) >> idx != 0 || (self.bitboards[Player::O as usize] & mask) >> idx != 0
@@ -200,17 +200,17 @@ impl Board {
         }
     }
 
-    pub fn place(&mut self, mov: Move) -> bool {
+    fn place(&mut self, mov: Move) -> bool {
         let idx = self.get_index(mov.0, mov.1);
         self.placeidx(idx)
     }
 
-    pub fn draw(&self) -> bool {
+    fn draw(&self) -> bool {
         (self.bitboards[Player::X as usize] | self.bitboards[Player::O as usize])
             .count_ones() == self.height * self.width && !self.has_won(Player::X) && !self.has_won(Player::O)
     }
 
-    pub fn placeidx(&mut self, idx: u32) -> bool {
+    fn placeidx(&mut self, idx: u32) -> bool {
         let mask = 1 << idx;
         let mut won = self.has_won(Player::X) || self.has_won(Player::O);
         if !self.occupied(idx) && !won {
