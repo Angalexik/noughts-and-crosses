@@ -327,6 +327,10 @@ impl Solver {
                 ScoreType::LowerBound => alpha = max(alpha, position.value),
                 ScoreType::UpperBound => beta = min(beta, position.value),
             }
+
+            if alpha >= beta {
+                return position.value
+            }
         }
 
         // let moves: Vec<Move> = order_moves(board.clone(), generate_moves(&board), player);
