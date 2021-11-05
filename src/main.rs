@@ -1,4 +1,3 @@
-mod solver;
 use solver::Move;
 use itertools::Itertools;
 use rustyline::Editor;

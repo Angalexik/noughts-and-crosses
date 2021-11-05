@@ -3,10 +3,28 @@ name = "noughts-and-crosses-2"
 version = "0.1.0"
 edition = "2021"
 
+[lib]
+name = "solver"
+path = "src/solver.rs"
+
+[[bin]]
+name = "client"
+path = "src/main.rs"
+
+[[bench]]
+name = "solver_benchmark"
+harness = false
+
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dev-dependencies]
+criterion = "0.3"
 
 [dependencies]
 rustyline = "9.0"
 itertools = "0.10"
 chrono = "0.4"
 ahash = "0.7"
+
+[profile.release]
+debug = 1
