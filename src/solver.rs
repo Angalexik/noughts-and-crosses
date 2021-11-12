@@ -26,7 +26,7 @@ impl Not for Player {
 
 pub struct Game {
     pub board: Board,
-    solver: Solver,
+    pub solver: Solver,
 }
 
 impl Game {
@@ -238,7 +238,7 @@ struct Score {
     flag: ScoreType,
 }
 
-struct Solver {
+pub struct Solver {
     transpositions: AHashMap<([Bitboard; 2], i32), Score>
 }
 
