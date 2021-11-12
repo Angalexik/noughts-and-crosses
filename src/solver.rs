@@ -366,4 +366,8 @@ impl Solver {
         // alpha
         value
     }
+
+    pub fn clear_transpositions(&mut self) {
+        self.transpositions.clear();
+    }
 }
