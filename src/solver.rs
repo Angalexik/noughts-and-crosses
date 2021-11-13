@@ -55,8 +55,11 @@ impl Game {
     }
 
     pub fn place(&mut self, pos: (u32, u32)) {
-        let mov = 1 << self.board.get_index(pos.0, pos.1);
-        self.board.placebit(mov);
+        self.board.placebit(self.pos_to_move(pos));
+    }
+
+    pub fn pos_to_move(&self, pos: (u32, u32)) -> Move {
+        1 << self.board.get_index(pos.0, pos.1)
     }
 
     pub fn best_move(&mut self) -> Move {
