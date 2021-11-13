@@ -9,7 +9,7 @@ fn test_heuristics() {
     game.place((0, 1));
     game.place((2, 0));
 
-    assert_eq!(game.best_move(), (0, 2));
+    assert_eq!(game.best_move(), game.pos_to_move((0, 2)));
 }
 
 #[test]
@@ -22,7 +22,7 @@ fn test_algo8() {
 
     game.board.print(true);
 
-    assert_eq!(game.best_move(), (2, 1));
+    assert_eq!(game.best_move(), game.pos_to_move((2, 1)));
 }
 
 #[test]
@@ -37,7 +37,7 @@ fn test_algo9() {
 
     game.board.print(true);
 
-    assert_eq!(game.best_move(), (2, 2));
+    assert_eq!(game.best_move(), game.pos_to_move((2, 2)));
 }
 
 #[test]
@@ -47,7 +47,7 @@ fn test_algo10() {
 
     game.place((0, 0));
     game.place((0, 2));
-    assert_ne!(game.best_move(), (1, 1));
+    assert_ne!(game.best_move(), game.pos_to_move((1, 1)));
 }
 
 #[test]
@@ -90,7 +90,7 @@ fn test_algo2() {
     game.place((0, 0)); // X
     game.place((1, 1)); // O
     game.place((0, 1)); // X
-    assert_eq!(game.best_move(), (0, 2));
+    assert_eq!(game.best_move(), game.pos_to_move((0, 2)));
 }
 
 #[test]
@@ -98,7 +98,7 @@ fn test_algo1() {
     let mut game = Game::new(3, 3, 3);
 
     game.place((0, 0));
-    assert_eq!(game.best_move(), (1, 1));
+    assert_eq!(game.best_move(), game.pos_to_move((1, 1)));
 }
 
 #[test]
@@ -108,7 +108,7 @@ fn test_algo3() {
     game.place((0, 0)); // X
     game.board.print(true);
     game.place((0, 1)); // O
-    assert_ne!(game.best_move(), (0, 2));
+    assert_ne!(game.best_move(), game.pos_to_move((0, 2)));
 }
 
 #[test]
@@ -120,7 +120,7 @@ fn test_algo4() {
     game.place((1, 1)); // X
     game.place((2, 2)); // O
     let best_move = game.best_move();
-    assert!(best_move == (1, 0) || best_move == (2, 0));
+    assert!(best_move == game.pos_to_move((1, 0)) || best_move == game.pos_to_move((2, 0)));
 }
 
 #[test]
@@ -133,7 +133,7 @@ fn test_algo5() {
     game.place((0, 2)); // O
     game.board.print(true);
 
-    assert_eq!(game.best_move(), (2, 0));
+    assert_eq!(game.best_move(), game.pos_to_move((2, 0)));
 }
 
 #[test]
@@ -149,7 +149,7 @@ fn test_algo6() {
 
     game.board.print(true);
 
-    assert_eq!(game.best_move(), (2, 1));
+    assert_eq!(game.best_move(), game.pos_to_move((2, 1)));
 }
 
 #[test]
@@ -162,5 +162,5 @@ fn test_algo7() {
 
     game.board.print(true);
 
-    assert_eq!(game.best_move(), (2, 1));
+    assert_eq!(game.best_move(), game.pos_to_move((2, 1)));
 }
