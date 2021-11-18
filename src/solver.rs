@@ -245,6 +245,10 @@ impl Board {
         }
         won
     }
+
+    fn generate_moves(&self) -> Move {
+        (!(self.bitboards[0] | self.bitboards[1])) & !((!0 << (self.width * (self.height + 1))) | self.top_mask)
+    }
 }
 
 enum ScoreType {
@@ -263,10 +267,6 @@ pub struct Solver {
 }
 
 impl Solver {
-    fn generate_moves(&self, board: &Board) -> Move {
-        (!(board.bitboards[0] | board.bitboards[1])) & !((!0 << (board.width * (board.height + 1))) | board.top_mask)
-    }
-
     fn best_move(&mut self, board: &Board) -> Move {
         let player: i8 = match board.player {
             Player::O => -1,
@@ -274,7 +274,7 @@ impl Solver {
         };
         let mut best_score = NEGINFINITY;
         let mut best_move: Option<Move> = None;
-        let moves = self.generate_moves(board);
+        let moves = board.generate_moves();
         // moves.sort_by(|a, b| score_move(self, b).cmp(&score_move(self, a)));
         // moves.sort_by_cached_key(|a| score_move(self, a));
         // moves.reverse();
@@ -335,7 +335,7 @@ impl Solver {
         }
 
         // let moves: Vec<Move> = order_moves(board.clone(), generate_moves(&board), player);
-        let moves: Move = self.generate_moves(&board);
+        let moves: Move = board.generate_moves();
         // moves.sort_by_cached_key(|a| score_move(&mut board, a));
         // moves.reverse();
         // moves.sort_by(|a, b| score_move(&mut board, b).cmp(&score_move(&mut board, a)));
