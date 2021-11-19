@@ -164,3 +164,20 @@ fn test_algo7() {
 
     assert_eq!(game.best_move(), game.pos_to_move((2, 1)));
 }
+
+#[test]
+fn test_not_over() {
+    let mut game = Game::new(3, 3, 3);
+
+    game.place((2, 0));
+    game.board.print(true);
+    assert!(!game.board.over());
+
+    game.place((1, 1));
+    game.board.print(true);
+    assert!(!game.board.over());
+
+    game.place((0, 2));
+    game.board.print(true);
+    assert!(!game.board.over());
+}
