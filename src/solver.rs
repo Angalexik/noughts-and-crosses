@@ -1,9 +1,10 @@
 use std::{cmp::{max, min}, ops::Not};
 use ahash::AHashMap;
 
-type Bitboard = u128; // Maximum board size is 10x10
-pub type Move = u128;
+type Bitboard = u64; // Maximum board size is 7x8
+pub type Move = u64;
 
+const BITBOARD_SIZE: u64 = 64;
 const INFINITY: i32 = i32::MAX;
 const NEGINFINITY: i32 = i32::MIN + 1;
 
@@ -278,7 +279,7 @@ impl Solver {
         // moves.sort_by(|a, b| score_move(self, b).cmp(&score_move(self, a)));
         // moves.sort_by_cached_key(|a| score_move(self, a));
         // moves.reverse();
-        for i in 0..128 {
+        for i in 0..BITBOARD_SIZE {
             // log!("{}-{}", row, col);
             let mov = ((moves >> i) & 1) << i;
             if mov != 0 { 
@@ -342,8 +343,8 @@ impl Solver {
         assert_ne!(moves, 0);
 
         let mut value = NEGINFINITY;
-        for i in 0..128 {
-            let mov: u128 = ((moves >> i) & 1) << i;
+        for i in 0..BITBOARD_SIZE {
+            let mov: Move = ((moves >> i) & 1) << i;
             if mov != 0 { 
                 let mut board2 = board.clone();
                 board2.placebit(mov);
