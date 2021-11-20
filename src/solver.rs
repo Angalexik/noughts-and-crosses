@@ -4,7 +4,6 @@ use ahash::AHashMap;
 type Bitboard = u64; // Maximum board size is 7x8
 pub type Move = u64;
 
-const BITBOARD_SIZE: u64 = 64;
 const INFINITY: i32 = i32::MAX;
 const NEGINFINITY: i32 = i32::MIN + 1;
 
@@ -48,6 +47,7 @@ impl Game {
                 bitboards: [0, 0],
                 player: Player::X,
                 top_mask: generate_top_mask(width, height),
+                used_bits: (width * (height + 1)) as u8
             },
             solver: Solver {
                 transpositions: AHashMap::new(),
@@ -81,6 +81,7 @@ pub struct Board {
     bitboards: [Bitboard; 2],
     player: Player,
     top_mask: Bitboard,
+    used_bits: u8,
 }
 
 impl Board {
@@ -205,17 +206,6 @@ impl Board {
 }
 
 impl Board {
-    pub fn new(width: u32, height: u32, row: u32) -> Board {
-        Board {
-            width,
-            height,
-            row,
-            bitboards: [0, 0],
-            player: Player::X,
-            top_mask: generate_top_mask(width, height)
-        }
-    }
-
     // fn place(&mut self, mov: Move) -> bool {
     //     let idx = self.get_index(mov.0, mov.1);
     //     self.placeidx(idx)
@@ -279,7 +269,7 @@ impl Solver {
         // moves.sort_by(|a, b| score_move(self, b).cmp(&score_move(self, a)));
         // moves.sort_by_cached_key(|a| score_move(self, a));
         // moves.reverse();
-        for i in 0..BITBOARD_SIZE {
+        for i in 0..board.used_bits {
             // log!("{}-{}", row, col);
             let mov = ((moves >> i) & 1) << i;
             if mov != 0 { 
@@ -343,7 +333,7 @@ impl Solver {
         assert_ne!(moves, 0);
 
         let mut value = NEGINFINITY;
-        for i in 0..BITBOARD_SIZE {
+        for i in 0..board.used_bits {
             let mov: Move = ((moves >> i) & 1) << i;
             if mov != 0 { 
                 let mut board2 = board.clone();
