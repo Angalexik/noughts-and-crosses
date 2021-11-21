@@ -49,9 +49,7 @@ impl Game {
                 top_mask: generate_top_mask(width, height),
                 used_bits: (width * (height + 1)) as u8
             },
-            solver: Solver {
-                transpositions: FxHashMap::default(),
-            }
+            solver: Solver::new(),
         }
     }
 
@@ -184,6 +182,10 @@ pub struct Solver {
 }
 
 impl Solver {
+    fn new() -> Solver {
+        Solver { transpositions: FxHashMap::default() }
+    }
+
     fn best_move(&mut self, board: &Board) -> Move {
         let player: i8 = match board.player {
             Player::O => -1,
