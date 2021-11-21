@@ -152,9 +152,7 @@ impl Board {
             self.has_won(Player::O) ||
             self.draw()
     }
-}
 
-impl Board {
     fn draw(&self) -> bool {
         (self.bitboards[Player::X as usize] | self.bitboards[Player::O as usize])
             .count_ones() == self.height * self.width && !self.has_won(Player::X) && !self.has_won(Player::O)
