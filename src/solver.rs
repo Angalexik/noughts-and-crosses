@@ -1,5 +1,5 @@
 use std::{cmp::{max, min}, ops::Not};
-use ahash::AHashMap;
+use fxhash::FxHashMap;
 
 type Bitboard = u64; // Maximum board size is 7x8
 pub type Move = u64;
@@ -50,7 +50,7 @@ impl Game {
                 used_bits: (width * (height + 1)) as u8
             },
             solver: Solver {
-                transpositions: AHashMap::new(),
+                transpositions: FxHashMap::default(),
             }
         }
     }
@@ -180,7 +180,7 @@ struct Score {
 }
 
 pub struct Solver {
-    transpositions: AHashMap<([Bitboard; 2], i32), Score>
+    transpositions: FxHashMap<([Bitboard; 2], i32), Score>
 }
 
 impl Solver {
