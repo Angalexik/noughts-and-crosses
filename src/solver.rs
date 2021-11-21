@@ -152,65 +152,9 @@ impl Board {
             self.has_won(Player::O) ||
             self.draw()
     }
-
-
-    pub fn remove(&mut self, row: u32, column: u32) {
-        let idx = self.get_index(row, column);
-        if self.bitboards[0] & (1 << idx) != 0 || self.bitboards[1] & (1 << idx) != 0 {
-            for i in 0..2 {
-                self.bitboards[i] &= !(1 << idx);
-            }
-        } else {
-            panic!();
-        }
-    }
-
-    // „borrowed“ from https://github.com/PascalPons/connect4/blob/part9/position.hpp#L226
-    pub fn asdf(&self, player: Player) -> u32 {
-        // vertical
-        let mut r = self.bitboards[player as usize] << 1;
-        // for i in range(2, self.row):
-        //     r &= self.bitboards[player as usize] << i
-        for i in 2..self.row {
-            r &= self.bitboards[player as usize] << i;
-        }
-        // r = (self.bitboards[player as usize] << 1) & (self.bitboards[player as usize] << 2)// & (self.bitboards[player as usize] << 3)
-
-        // horizontal
-        let mut p = (self.bitboards[player as usize] << (self.height+1)) & (self.bitboards[player as usize] << (self.row-2)*(self.height+1));
-        r |= p & (self.bitboards[player as usize] << (self.row-1)*(self.height+1));
-        r |= p & (self.bitboards[player as usize] >> (self.height+1));
-        p = (self.bitboards[player as usize] >> (self.height+1)) & (self.bitboards[player as usize] >> (self.row-2)*(self.height+1));
-        r |= p & (self.bitboards[player as usize] << (self.height+1));
-        r |= p & (self.bitboards[player as usize] >> (self.row-1)*(self.height+1));
-
-        // diagonal 1
-        p = (self.bitboards[player as usize] << self.height) & (self.bitboards[player as usize] << (self.row-2)*self.height);
-        r |= p & (self.bitboards[player as usize] << (self.row-1)*self.height);
-        r |= p & (self.bitboards[player as usize] >> self.height);
-        p = (self.bitboards[player as usize] >> self.height) & (self.bitboards[player as usize] >> (self.row-2)*self.height);
-        r |= p & (self.bitboards[player as usize] << self.height);
-        r |= p & (self.bitboards[player as usize] >> (self.row-1)*self.height);
-
-        // diagonal 2
-        p = (self.bitboards[player as usize] << (self.height+2)) & (self.bitboards[player as usize] << (self.row-2)*(self.height+2));
-        r |= p & (self.bitboards[player as usize] << (self.row-1)*(self.height+2));
-        r |= p & (self.bitboards[player as usize] >> (self.height+2));
-        p = (self.bitboards[player as usize] >> (self.height+2)) & (self.bitboards[player as usize] >> (self.row-2)*(self.height+2));
-        r |= p & (self.bitboards[player as usize] << (self.height+2));
-        r |= p & (self.bitboards[player as usize] >> (self.row-1)*(self.height+2));
-
-        return (r & (!self.bitboards[!player as usize])).count_ones();
-        // return r
-    }
 }
 
 impl Board {
-    // fn place(&mut self, mov: Move) -> bool {
-    //     let idx = self.get_index(mov.0, mov.1);
-    //     self.placeidx(idx)
-    // }
-
     fn draw(&self) -> bool {
         (self.bitboards[Player::X as usize] | self.bitboards[Player::O as usize])
             .count_ones() == self.height * self.width && !self.has_won(Player::X) && !self.has_won(Player::O)
@@ -219,22 +163,6 @@ impl Board {
     pub fn placebit(&mut self, mov: Move) {
         self.bitboards[self.player as usize] |= mov;
         self.player = !self.player;
-    }
-
-    fn placeidx(&mut self, idx: u32) -> bool {
-        let mask = 1 << idx;
-        let mut won = self.has_won(Player::X) || self.has_won(Player::O);
-        if !self.occupied(mask) && !won {
-            self.bitboards[self.player as usize] |= mask;
-            won = self.has_won(self.player);
-            self.player = match self.player {
-                Player::X => Player::O,
-                Player::O => Player::X,
-            };
-        } else {
-            panic!()
-        }
-        won
     }
 
     fn generate_moves(&self) -> Move {
