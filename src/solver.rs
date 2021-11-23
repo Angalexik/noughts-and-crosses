@@ -62,7 +62,7 @@ impl Game {
     }
 
     pub fn best_move(&mut self) -> Move {
-        self.solver.best_move(&self.board)
+        self.solver.best_move(&mut self.board)
     }
 
     pub fn can_play(&self, pos: (u32, u32)) -> bool {
@@ -161,6 +161,11 @@ impl Board {
         self.player = !self.player;
     }
 
+    pub fn undo_move(&mut self, mov: Move) {
+        self.bitboards[(!self.player) as usize] ^= mov;
+        self.player = !self.player;
+    }
+
     fn generate_moves(&self) -> Move {
         (!(self.bitboards[0] | self.bitboards[1])) & !((!0 << (self.width * (self.height + 1))) | self.top_mask)
     }
@@ -186,7 +191,7 @@ impl Solver {
         Solver { transpositions: FxHashMap::default() }
     }
 
-    fn best_move(&mut self, board: &Board) -> Move {
+    fn best_move(&mut self, board: &mut Board) -> Move {
         let player: i8 = match board.player {
             Player::O => -1,
             Player::X => 1,
@@ -201,9 +206,9 @@ impl Solver {
             // log!("{}-{}", row, col);
             let mov = ((moves >> i) & 1) << i;
             if mov != 0 { 
-                let mut board2 = board.clone();
-                board2.placebit(mov);
-                let score = -self.negamax(board2, INFINITY, NEGINFINITY, INFINITY, player);
+                board.placebit(mov);
+                let score = -self.negamax(board, INFINITY, NEGINFINITY, INFINITY, player);
+                board.undo_move(mov);
                 // println!("{:?} score: {}", mov, score);
                 if score > best_score {
                     best_score = score;
@@ -219,7 +224,7 @@ impl Solver {
         best_move.expect("No move was chosen")
     }
 
-    fn negamax(&mut self, board: Board, depth: i32, mut alpha: i32, mut beta: i32, player: i8) -> i32 {
+    fn negamax(&mut self, board: &mut Board, depth: i32, mut alpha: i32, mut beta: i32, player: i8) -> i32 {
         let orig_alpha = alpha;
         if /*depth == 0 ||*/ board.over() {
             if board.draw() {
@@ -264,9 +269,9 @@ impl Solver {
         for i in 0..board.used_bits {
             let mov: Move = ((moves >> i) & 1) << i;
             if mov != 0 { 
-                let mut board2 = board.clone();
-                board2.placebit(mov);
-                let ngresult = -self.negamax(board2, depth - 1, -beta, -alpha, -player);
+                board.placebit(mov);
+                let ngresult = -self.negamax(board, depth - 1, -beta, -alpha, -player);
+                board.undo_move(mov);
                 // value = max(value, -negamax(board2, depth - 1, -beta, -alpha, -player)); // Beta and Alpha are swapped here
                 value = max(value, ngresult);
                 alpha = max(value, alpha);
