@@ -136,13 +136,14 @@ impl Board {
         let bitboard = self.bitboards[player as usize];
         let delta = self.row - 2;
         let vert = bitboard & (bitboard >> 1);
+        if vert & (vert >> delta) != 0 { return true; }
         let hori = bitboard & (bitboard >> (self.height + 1));
+        if hori & (hori >> delta * (self.height + 1)) != 0 { return true; }
         let diag1 = bitboard & (bitboard >> self.height);
+        if diag1 & (diag1 >> delta * self.height) != 0 { return true; }
         let diag2 = bitboard & (bitboard >> (self.height + 2));
-        (vert & (vert >> delta)) |
-            (hori & (hori >> delta * (self.height + 1))) |
-            (diag1 & (diag1 >> delta * self.height)) |
-            (diag2 & (diag2 >> delta * (self.height + 2))) != 0
+        if diag2 & (diag2 >> delta * (self.height + 2)) != 0 { return true; }
+        return false;
     }
 
     pub fn over(&self) -> bool {
