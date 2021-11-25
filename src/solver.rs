@@ -172,7 +172,7 @@ impl Board {
     }
 }
 
-enum ScoreType {
+enum ScoreKind {
     Exact,
     LowerBound,
     UpperBound,
@@ -180,7 +180,7 @@ enum ScoreType {
 
 struct Score {
     value: i32,
-    flag: ScoreType,
+    kind: ScoreKind,
 }
 
 pub struct Solver {
@@ -248,10 +248,10 @@ impl Solver {
 
         if self.transpositions.contains_key(&(board.bitboards, depth)) {
             let position = self.transpositions.get(&(board.bitboards, depth)).unwrap();
-            match position.flag {
-                ScoreType::Exact => return position.value,
-                ScoreType::LowerBound => alpha = max(alpha, position.value),
-                ScoreType::UpperBound => beta = min(beta, position.value),
+            match position.kind {
+                ScoreKind::Exact => return position.value,
+                ScoreKind::LowerBound => alpha = max(alpha, position.value),
+                ScoreKind::UpperBound => beta = min(beta, position.value),
             }
 
             if alpha >= beta {
@@ -285,10 +285,10 @@ impl Solver {
 
         self.transpositions.insert((board.bitboards, depth), Score {
             value,
-            flag: match value {
-                x if x <= orig_alpha => ScoreType::UpperBound,
-                x if x >= beta => ScoreType::LowerBound,
-                _ => ScoreType::Exact,
+            kind: match value {
+                x if x <= orig_alpha => ScoreKind::UpperBound,
+                x if x >= beta => ScoreKind::LowerBound,
+                _ => ScoreKind::Exact,
             }
         });
 
