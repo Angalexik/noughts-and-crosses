@@ -1,4 +1,5 @@
 use std::{cmp::{max, min}, ops::Not};
+use arrayvec::ArrayVec;
 use fxhash::FxHashMap;
 
 type Bitboard = u64; // Maximum board size is 7x8
@@ -27,7 +28,7 @@ impl Not for Player {
 #[derive(PartialEq, Eq, Debug)]
 pub enum Moves {
     XOMoves(Move, u64),
-    C4Moves(Vec<Move>, usize),
+    C4Moves(ArrayVec<Move, 10>, usize),
 }
 
 impl Iterator for Moves {

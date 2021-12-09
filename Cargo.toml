@@ -25,6 +25,7 @@ rustyline = "9.0"
 itertools = "0.10"
 chrono = "0.4"
 fxhash = "0.2"
+arrayvec = "0.7"
 
 [profile.release]
 debug = 1
