@@ -24,6 +24,39 @@ impl Not for Player {
     }
 }
 
+#[derive(PartialEq, Eq, Debug)]
+pub enum Moves {
+    XOMoves(Move, u64),
+    C4Moves(Vec<Move>, usize),
+}
+
+impl Iterator for Moves {
+    type Item = Move;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        match self {
+            Moves::XOMoves(ref moves, ref mut pos) => {
+                for i in *pos..64 { // probably wrong, but it works
+                    let mov: Move = ((moves >> i) & 1) << i;
+                    if mov != 0 {
+                        *pos = i + 1;
+                        return Some(mov);
+                    }
+                }
+                return None
+            },
+            Moves::C4Moves(ref moves, ref mut pos) => {
+                if *pos < moves.len() {
+                    let mov = moves[*pos];
+                    *pos += 1;
+                    return Some(mov);
+                }
+                return None
+            },
+        }
+    }
+}
+
 fn generate_top_mask(width: u32, height: u32) -> Bitboard {
     let mut top_mask = 0;
     for i in 1..width + 2 {
@@ -38,7 +71,7 @@ pub struct Game {
 }
 
 impl Game {
-    pub fn new(width: u32, height: u32, row: u32) -> Game {
+    pub fn new_xo(width: u32, height: u32, row: u32) -> Game {
         Game {
             board: Board {
                 width,
@@ -47,7 +80,26 @@ impl Game {
                 bitboards: [0, 0],
                 player: Player::X,
                 top_mask: generate_top_mask(width, height),
-                used_bits: (width * (height + 1)) as u8
+                used_bits: (width * (height + 1)) as u8,
+                kind: BoardKind::XOBoard,
+                col_tops: vec![0; width as usize]
+            },
+            solver: Solver::new(),
+        }
+    }
+
+    pub fn new_connect_four(width: u32, height: u32, row: u32) -> Game {
+        Game {
+            board: Board {
+                width,
+                height,
+                row,
+                bitboards: [0, 0],
+                player: Player::X,
+                top_mask: generate_top_mask(width, height),
+                used_bits: (width * (height + 1)) as u8,
+                kind: BoardKind::C4Board,
+                col_tops: vec![0; width as usize]
             },
             solver: Solver::new(),
         }
@@ -55,6 +107,10 @@ impl Game {
 
     pub fn place(&mut self, pos: (u32, u32)) {
         self.board.placebit(self.pos_to_move(pos));
+    }
+
+    pub fn placebit(&mut self, mov: Move) {
+        self.board.placebit(mov);
     }
 
     pub fn pos_to_move(&self, pos: (u32, u32)) -> Move {
@@ -65,24 +121,38 @@ impl Game {
         self.solver.best_move(&mut self.board)
     }
 
-    pub fn can_play(&self, pos: (u32, u32)) -> bool {
-        let mov = 1 << self.board.get_index(pos.0, pos.1);
-        return !self.board.over() && !self.board.occupied(mov)
+    pub fn can_play(&self, mov: Move) -> bool {
+        self.board.can_play(mov)
     }
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone)]
+pub enum BoardKind {
+    XOBoard,
+    C4Board,
+}
+
+#[derive(Clone)]
 pub struct Board {
     width: u32,
     height: u32,
     row: u32,
-    bitboards: [Bitboard; 2],
+    pub bitboards: [Bitboard; 2],
     player: Player,
     top_mask: Bitboard,
     used_bits: u8,
+    col_tops: Vec<u64>,
+    kind: BoardKind,
 }
 
 impl Board {
+    fn can_play(&self, mov: Move) -> bool {
+        match self.kind {
+            BoardKind::XOBoard => !self.over() && !self.occupied(mov),
+            BoardKind::C4Board => self.col_tops[mov as usize] < self.height as u64,
+        }
+    }
+
     fn get_index(&self, row: u32, column: u32) -> u32 {
         let height = self.height + 1;
         let row = row + 1;
@@ -158,17 +228,45 @@ impl Board {
     }
 
     pub fn placebit(&mut self, mov: Move) {
-        self.bitboards[self.player as usize] |= mov;
-        self.player = !self.player;
+        match self.kind {
+            BoardKind::XOBoard => {
+                self.bitboards[self.player as usize] |= mov;
+                self.player = !self.player;
+            }
+            BoardKind::C4Board => {
+                self.bitboards[self.player as usize] |= 1 << (self.col_tops[mov as usize] + mov * (self.height + 1) as u64);
+                self.col_tops[mov as usize] += 1;
+                self.player = !self.player;
+            }
+        }
     }
 
     pub fn undo_move(&mut self, mov: Move) {
-        self.bitboards[(!self.player) as usize] ^= mov;
-        self.player = !self.player;
+        match self.kind {
+            BoardKind::XOBoard => {
+                self.bitboards[(!self.player) as usize] ^= mov;
+                self.player = !self.player;
+            }
+            BoardKind::C4Board => {
+                self.col_tops[mov as usize] -= 1;
+                self.bitboards[!self.player as usize] ^= 1 << (self.col_tops[mov as usize] + mov * (self.height + 1) as u64);
+                self.player = !self.player;
+            }
+        }
     }
 
-    fn generate_moves(&self) -> Move {
-        (!(self.bitboards[0] | self.bitboards[1])) & !((!0 << (self.width * (self.height + 1))) | self.top_mask)
+    pub fn generate_moves(&self) -> Moves {
+        match self.kind { // Probably not the best way of doing things
+            BoardKind::XOBoard => Moves::XOMoves((!(self.bitboards[0] | self.bitboards[1])) & !((!0 << (self.width * (self.height + 1))) | self.top_mask), 0),
+            BoardKind::C4Board => {
+                Moves::C4Moves(self.col_tops.iter().enumerate().filter_map(|x| {
+                    if *x.1 < self.height as u64 {
+                        return Some(x.0 as Move);
+                    }
+                    None
+                }).collect(), 0)
+            }
+        }
     }
 }
 
@@ -203,18 +301,15 @@ impl Solver {
         // moves.sort_by(|a, b| score_move(self, b).cmp(&score_move(self, a)));
         // moves.sort_by_cached_key(|a| score_move(self, a));
         // moves.reverse();
-        for i in 0..board.used_bits {
+        for mov in moves {
             // log!("{}-{}", row, col);
-            let mov = ((moves >> i) & 1) << i;
-            if mov != 0 { 
-                board.placebit(mov);
-                let score = -self.negamax(board, INFINITY, NEGINFINITY, INFINITY, player);
-                board.undo_move(mov);
-                // println!("{:?} score: {}", mov, score);
-                if score > best_score {
-                    best_score = score;
-                    best_move = Some(mov)
-                }
+            board.placebit(mov);
+            let score = -self.negamax(board, INFINITY, NEGINFINITY, INFINITY, player);
+            board.undo_move(mov);
+            // println!("{:?} score: {}", mov, score);
+            if score > best_score {
+                best_score = score;
+                best_move = Some(mov)
             }
         }
         // println!("Evaluation: {}", match best_score.cmp(&0) {
@@ -260,26 +355,22 @@ impl Solver {
         }
 
         // let moves: Vec<Move> = order_moves(board.clone(), generate_moves(&board), player);
-        let moves: Move = board.generate_moves();
+        let moves = board.generate_moves();
         // moves.sort_by_cached_key(|a| score_move(&mut board, a));
         // moves.reverse();
         // moves.sort_by(|a, b| score_move(&mut board, b).cmp(&score_move(&mut board, a)));
-        assert_ne!(moves, 0);
 
         let mut value = NEGINFINITY;
-        for i in 0..board.used_bits {
-            let mov: Move = ((moves >> i) & 1) << i;
-            if mov != 0 { 
-                board.placebit(mov);
-                let ngresult = -self.negamax(board, depth - 1, -beta, -alpha, -player);
-                board.undo_move(mov);
-                // value = max(value, -negamax(board2, depth - 1, -beta, -alpha, -player)); // Beta and Alpha are swapped here
-                value = max(value, ngresult);
-                alpha = max(value, alpha);
-                if alpha >= beta {
-                    // print!("snip!");
-                    break;
-                }
+        for mov in moves {
+            board.placebit(mov);
+            let ngresult = -self.negamax(board, depth - 1, -beta, -alpha, -player);
+            board.undo_move(mov);
+            // value = max(value, -negamax(board2, depth - 1, -beta, -alpha, -player)); // Beta and Alpha are swapped here
+            value = max(value, ngresult);
+            alpha = max(value, alpha);
+            if alpha >= beta {
+                // print!("snip!");
+                break;
             }
         }
 
