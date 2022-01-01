@@ -27,7 +27,7 @@ impl Not for Player {
 
 #[derive(PartialEq, Eq, Debug)]
 pub enum Moves {
-    XOMoves(Move, u64),
+    XOMoves(Move, u64, u8),
     C4Moves(ArrayVec<Move, 10>, usize),
 }
 
@@ -36,8 +36,8 @@ impl Iterator for Moves {
 
     fn next(&mut self) -> Option<Self::Item> {
         match self {
-            Moves::XOMoves(ref moves, ref mut pos) => {
-                for i in *pos..64 { // probably wrong, but it works
+            Moves::XOMoves(ref moves, ref mut pos, ref used_bits) => {
+                for i in *pos..*used_bits as u64 { // probably wrong, but it works
                     let mov: Move = ((moves >> i) & 1) << i;
                     if mov != 0 {
                         *pos = i + 1;
@@ -258,7 +258,7 @@ impl Board {
 
     pub fn generate_moves(&self) -> Moves {
         match self.kind { // Probably not the best way of doing things
-            BoardKind::XOBoard => Moves::XOMoves((!(self.bitboards[0] | self.bitboards[1])) & !((!0 << (self.width * (self.height + 1))) | self.top_mask), 0),
+            BoardKind::XOBoard => Moves::XOMoves((!(self.bitboards[0] | self.bitboards[1])) & !((!0 << (self.width * (self.height + 1))) | self.top_mask), 0, self.used_bits),
             BoardKind::C4Board => {
                 Moves::C4Moves(self.col_tops.iter().enumerate().filter_map(|x| {
                     if *x.1 < self.height as u64 {
