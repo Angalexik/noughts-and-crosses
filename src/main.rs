@@ -20,12 +20,23 @@ fn check_game_end(game: &solver::Game) {
     }
 }
 
+fn evaluation(eval: i32) -> String {
+    if eval == 0 { return "Draw".to_string() }
+
+    // 1 turns lol
+    match eval < 0 {
+        false => format!("X wins in {} turns", (eval as f32 / 2.0).ceil()), // Hopefully convert plies to turns
+        true => format!("O wins in {} turns", (eval as f32 / 2.0 * -1.0).ceil()),
+    }
+}
+
 fn cpuplay(game: &mut solver::Game) {
     println!("Thinking time...");
     let now = Instant::now();
     let best_move = game.best_move();
     println!("Thinking took {}ms", now.elapsed().as_millis());
     game.placebit(best_move);
+    println!("Computer evaluation: {}", evaluation(game.evaluation()));
     check_game_end(&game);
     game.board.print(false);
 }

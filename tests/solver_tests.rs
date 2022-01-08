@@ -265,3 +265,42 @@ fn test_can_c4_play() {
 
     assert!(!game.can_play(0));
 }
+
+#[test]
+fn test_scoring_draw() {
+    let mut game = Game::new_xo(3, 3, 3);
+
+    assert_eq!(game.evaluation(), 0);
+
+    game.place((2, 0));
+    assert_eq!(game.evaluation(), 0);
+
+    game.place((1, 1));
+    assert_eq!(game.evaluation(), 0);
+}
+
+#[test]
+fn test_scoring_x_win() {
+    let mut game = Game::new_xo(3, 3, 3);
+
+    game.place((0, 0));
+    game.place((1, 1));
+    game.place((1, 0));
+    game.place((2, 2));
+
+    assert_eq!(game.evaluation(), 1)
+}
+
+#[test]
+fn test_scoring_o_win() {
+    let mut game = Game::new_xo(3, 3,3);
+
+    game.place((1, 1));
+    game.place((0, 0));
+    game.place((2, 2));
+    game.place((1, 0));
+    game.place((0, 2));
+    // game.place((2, 1));
+
+    assert_eq!(game.evaluation(), -1)
+}

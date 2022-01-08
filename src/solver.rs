@@ -7,6 +7,7 @@ pub type Move = u64;
 
 const INFINITY: i32 = i32::MAX;
 const NEGINFINITY: i32 = i32::MIN + 1;
+const WIN_SCORE: i32 = INFINITY;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Player {
@@ -124,6 +125,21 @@ impl Game {
 
     pub fn can_play(&self, mov: Move) -> bool {
         self.board.can_play(mov)
+    }
+    // Doesn't return the raw score, but number of plies to win
+    // 0 means a draw, not a won position
+    pub fn evaluation(&mut self) -> i32 {
+        let player = match self.board.player {
+            Player::X => -1,
+            Player::O => 1,
+        };
+
+        let score = self.solver.negamax(&mut self.board, INFINITY, NEGINFINITY, INFINITY, player) * -player as i32;
+        if score == 0 { return 0; }
+        match score < 0 {
+            true => -WIN_SCORE - score,
+            false => WIN_SCORE - score,
+        }
     }
 }
 
@@ -305,7 +321,7 @@ impl Solver {
         for mov in moves {
             // log!("{}-{}", row, col);
             board.placebit(mov);
-            let score = -self.negamax(board, INFINITY, NEGINFINITY, INFINITY, player);
+            let score = -self.negamax(board, WIN_SCORE, NEGINFINITY, INFINITY, player);
             board.undo_move(mov);
             // println!("{:?} score: {}", mov, score);
             if score > best_score {
