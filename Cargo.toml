@@ -1,5 +1,5 @@
 [package]
-name = "noughts-and-crosses-2"
+name = "noughts-and-crosses"
 version = "0.1.0"
 edition = "2021"
 
