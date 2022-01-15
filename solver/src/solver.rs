@@ -126,6 +126,11 @@ impl Game {
     pub fn can_play(&self, mov: Move) -> bool {
         self.board.can_play(mov)
     }
+
+    pub fn render(&self) -> String {
+        self.board.render(false)
+    }
+
     // Doesn't return the raw score, but number of plies to win
     // 0 means a draw, not a won position
     pub fn evaluation(&mut self) -> i32 {
@@ -176,7 +181,7 @@ impl Board {
         height - 1 - row + (column * height)
     }
 
-    fn render(&self, debug: bool) -> String {
+    pub fn render(&self, debug: bool) -> String {
         let mut lines = String::new();
         for row in 0..self.height {
             let mut line = String::new();
