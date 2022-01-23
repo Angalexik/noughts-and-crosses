@@ -1,38 +1,67 @@
 <script lang="ts">
+  import { invoke } from "@tauri-apps/api/tauri";
+
   export let rows = 3;
   export let columns = 3;
   export let inarow = 3;
   export let style = "";
+
   export let started = false;
 
-  let board;
-  let displayBoard = new Array(columns).fill("").map(() => new Array(rows).fill(""));
+  let board: string[][] | undefined;
 
-  $: if (board === undefined) {
-    displayBoard = new Array(columns).fill("").map(() => new Array(rows).fill(""));
-  }
-
-  function place(idx: number) {
+  async function place(row: number, col: number) {
+    if (await invoke("can_play", { row: row, col: col })) {
+      invoke("place", {
+        row: row,
+        col: col,
+      });
+      getBoard(columns, rows).then((x) => (board = x));
+    }
     // console.log(idx)
     // board[idx] = xTurn ? "close" : "circle"
     // xTurn = !xTurn
   }
+
+  export async function toggleGameState() {
+    // TODO: shorter name
+    invoke("reset", {
+      width: columns,
+      height: rows,
+      row: inarow,
+      kind: "XOBoard",
+    });
+    started = !started;
+  }
+
+  async function getBoard(width: number, height: number): Promise<string[][]> {
+    if (started) {
+      const boardString: string = await invoke("board");
+      return boardString.split("\n").map((line) => line.split(""));
+    } else {
+      return new Array(width).fill("").map(() => new Array(height).fill("."));
+    }
+  }
+
+  $: getBoard(columns, rows).then((x) => (board = x));
 </script>
 
 <div id="boardContainer">
   <div id="board" style="--rows: {rows}; --columns: {columns}; {style}">
-    {#each displayBoard as row, i}
-      {#each row as col, i}
-        <div
-          class="tile centred-container"
-          on:click={() => {
-            if (started) place(i);
-          }}
-        >
-          <img class="icon" src="./{col}.svg" alt=" " />
-        </div>
+    {#if board !== undefined}
+      {#each board as row, i}
+        {#each row as col, j}
+          <div
+            class="tile centred-container"
+            on:click={() => {
+              if (started) place(i, j);
+            }}
+          >
+            <img class="icon" src="./{col}.svg" alt=" " />
+          </div>
+        {/each}
       {/each}
-    {/each}
+    {/if}
   </div>
 </div>
 

@@ -3,6 +3,7 @@ use arrayvec::ArrayVec;
 use dashmap::DashMap;
 use fxhash::FxBuildHasher;
 use rayon::prelude::*;
+use serde::{Serialize, Deserialize};
 
 type Bitboard = u64; // Maximum board size is 7x8
 pub type Move = u64;
@@ -111,6 +112,21 @@ impl Game {
         }
     }
 
+    pub fn reset(&mut self, width: u32, height: u32, row: u32, kind: BoardKind) {
+        self.board = Board {
+                width,
+                height,
+                row,
+                bitboards: [0, 0],
+                player: Player::X,
+                top_mask: generate_top_mask(width, height),
+                used_bits: (width * (height + 1)) as u8,
+                kind,
+                col_tops: vec![0; width as usize]
+        };
+        self.solver = Solver::new();
+    }
+
     pub fn place(&mut self, pos: (u32, u32)) {
         self.board.placebit(self.pos_to_move(pos));
     }
@@ -152,7 +168,7 @@ impl Game {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Serialize, Deserialize)]
 pub enum BoardKind {
     XOBoard,
     C4Board,

@@ -14,7 +14,7 @@
 
 	let sliderProps = {
 		min: 2,
-		max: 10,
+		max: 6,
 		discrete: true,
 	}
 </script>

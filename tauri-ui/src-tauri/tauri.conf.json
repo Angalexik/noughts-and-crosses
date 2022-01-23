@@ -6,7 +6,7 @@
   "build": {
     "distDir": "../public",
     "devPath": "http://localhost:8080",
-    "beforeDevCommand": "npm run start",
+    "beforeDevCommand": "npm run dev",
     "beforeBuildCommand": "npm run build"
   },
   "tauri": {
