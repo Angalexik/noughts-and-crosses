@@ -1,67 +1,58 @@
 <script lang="ts">
-  import { invoke } from "@tauri-apps/api/tauri";
+  import { createEventDispatcher } from "svelte";
+
+  import CircularProgress from "@smui/circular-progress";
+
+  const dispatch =
+    createEventDispatcher<{ place: { row: number; col: number } }>();
 
   export let rows = 3;
   export let columns = 3;
-  export let inarow = 3;
   export let style = "";
+  export let boardString: string;
+  export let waiting: boolean;
 
   export let started = false;
 
-  let board: string[][] | undefined;
+  let board: string[][] = getBoard(columns, rows, boardString);
 
-  async function place(row: number, col: number) {
-    if (await invoke("can_play", { row: row, col: col })) {
-      invoke("place", {
-        row: row,
-        col: col,
-      });
-      getBoard(columns, rows).then((x) => (board = x));
-    }
-    // console.log(idx)
-    // board[idx] = xTurn ? "close" : "circle"
-    // xTurn = !xTurn
-  }
-
-  export async function toggleGameState() {
-    // TODO: shorter name
-    invoke("reset", {
-      width: columns,
-      height: rows,
-      row: inarow,
-      kind: "XOBoard",
-    });
-    started = !started;
-  }
-
-  async function getBoard(width: number, height: number): Promise<string[][]> {
+  function getBoard(
+    width: number,
+    height: number,
+    boardString: string
+  ): string[][] {
     if (started) {
-      const boardString: string = await invoke("board");
       return boardString.split("\n").map((line) => line.split(""));
     } else {
       return new Array(width).fill("").map(() => new Array(height).fill("."));
     }
   }
 
-  $: getBoard(columns, rows).then((x) => (board = x));
+  $: board = getBoard(columns, rows, boardString);
 </script>
 
 <div id="boardContainer">
+  {#if waiting}
+    <CircularProgress indeterminate />
+  {/if}
   <div id="board" style="--rows: {rows}; --columns: {columns}; {style}">
-    {#if board !== undefined}
-      {#each board as row, i}
-        {#each row as col, j}
-          <div
-            class="tile centred-container"
-            on:click={() => {
-              if (started) place(i, j);
-            }}
-          >
-            <img class="icon" src="./{col}.svg" alt=" " />
-          </div>
-        {/each}
+    {#each board as row, i}
+      {#each row as col, j}
+        <div
+          class="tile centred-container"
+          on:click={() => {
+            if (started && !waiting) {
+              dispatch("place", {
+                row: i,
+                col: j,
+              });
+            }
+          }}
+        >
+          <img class="icon" src="./{col}.svg" alt=" " />
+        </div>
       {/each}
-    {/if}
+    {/each}
   </div>
 </div>
 

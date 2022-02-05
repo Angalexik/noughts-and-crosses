@@ -13,6 +13,8 @@ fn main() {
       commands::board,
       commands::reset,
       commands::can_play,
+      commands::over,
+      commands::place_best_move,
     ])
     .run(tauri::generate_context!())
     .expect("error while running tauri application");
