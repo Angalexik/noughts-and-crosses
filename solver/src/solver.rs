@@ -331,7 +331,7 @@ impl Solver {
             // println!("{:?} score: {}", mov, score);
             if score > best_score {
                 best_score = score;
-                best_move = Some(mov)
+                best_move = Some(mov);
             }
         }
         // println!("Evaluation: {}", match best_score.cmp(&0) {
