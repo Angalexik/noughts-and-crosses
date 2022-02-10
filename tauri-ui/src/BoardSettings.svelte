@@ -1,16 +1,14 @@
 <script lang="ts">
-  import Switch from "@smui/switch";
-  import FormField from "@smui/form-field";
-  import Paper from "@smui/paper";
+  import Switch from '@smui/switch';
+  import FormField from '@smui/form-field';
+  import Paper from '@smui/paper';
 
-  import SliderWithCentredLabel from "./SliderWithCentredLabel.svelte";
+  import SliderWithCentredLabel from './SliderWithCentredLabel.svelte';
 
-  export let connect4 = false;
+  export let playingAsX = true;
   export let boardWidth = 3;
   export let boardHeight = 3;
   export let boardRow = 3;
-
-  export let style = "";
 
   let sliderProps = {
     min: 2,
@@ -19,12 +17,10 @@
   };
 </script>
 
-<Paper class="centred-container" {style}>
+<Paper class="centred-container absolute bottom-4 max-w-2xl">
   <FormField align="start" style="width: 210px">
-    <Switch bind:checked={connect4} />
-    <span slot="label"
-      >{connect4 ? "Connect 4 Mode" : "Noughts and Crosses"}</span
-    >
+    <Switch bind:checked={playingAsX} />
+    <span slot="label">{playingAsX ? 'Playing as X' : 'Playing as O'}</span>
   </FormField>
   <SliderWithCentredLabel bind:value={boardHeight} {...sliderProps}>
     <span>Board Height</span>

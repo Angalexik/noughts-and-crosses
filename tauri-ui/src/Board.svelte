@@ -1,14 +1,13 @@
 <script lang="ts">
-  import { createEventDispatcher } from "svelte";
+  import { createEventDispatcher } from 'svelte';
 
-  import CircularProgress from "@smui/circular-progress";
+  import CircularProgress from '@smui/circular-progress';
 
   const dispatch =
     createEventDispatcher<{ place: { row: number; col: number } }>();
 
   export let rows = 3;
   export let columns = 3;
-  export let style = "";
   export let boardString: string;
   export let waiting: boolean;
 
@@ -22,9 +21,9 @@
     boardString: string
   ): string[][] {
     if (started) {
-      return boardString.split("\n").map((line) => line.split(""));
+      return boardString.split('\n').map((line) => line.split(''));
     } else {
-      return new Array(width).fill("").map(() => new Array(height).fill("."));
+      return new Array(width).fill('').map(() => new Array(height).fill('.'));
     }
   }
 
@@ -33,16 +32,24 @@
 
 <div id="boardContainer">
   {#if waiting}
-    <CircularProgress indeterminate />
+    <CircularProgress
+      style="width: 160px; height: 160px; position: absolute; inset: 0; margin: auto;"
+      indeterminate
+    />
   {/if}
-  <div id="board" style="--rows: {rows}; --columns: {columns}; {style}">
+  <div
+    id="board"
+    style="--rows: {rows}; --columns: {columns};"
+    class="mt-0 mb-16 mx-auto"
+  >
     {#each board as row, i}
       {#each row as col, j}
         <div
-          class="tile centred-container"
+          class="tile centred-container transition-colors"
+          style="background-color: {waiting ? '#aaa' : '#fff'};"
           on:click={() => {
             if (started && !waiting) {
-              dispatch("place", {
+              dispatch('place', {
                 row: i,
                 col: j,
               });
@@ -70,7 +77,6 @@
 
   .tile {
     min-height: 0;
-    background: white;
     /* font-size: calc(50vmin / (var(--rows))); */
     text-align: center;
     aspect-ratio: 1/1;
@@ -86,7 +92,7 @@
   }
 
   .icon:before {
-    content: "";
+    content: '';
     display: block;
     height: 0;
     width: 0;
