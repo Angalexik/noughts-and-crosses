@@ -27,6 +27,8 @@ itertools = "0.10"
 chrono = "0.4"
 fxhash = "0.2"
 arrayvec = "0.7"
+rayon = "1.5"
+dashmap = "5.1"
 
 [profile.release]
 debug = 1

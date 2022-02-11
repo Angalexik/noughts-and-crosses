@@ -1,6 +1,8 @@
-use std::{cmp::{max, min}, ops::Not};
+use std::{cmp::{max, min}, ops::Not, sync::Arc};
 use arrayvec::ArrayVec;
-use fxhash::FxHashMap;
+use dashmap::DashMap;
+use fxhash::FxBuildHasher;
+use rayon::prelude::*;
 
 type Bitboard = u64; // Maximum board size is 7x8
 pub type Move = u64;
@@ -8,6 +10,8 @@ pub type Move = u64;
 const INFINITY: i32 = i32::MAX;
 const NEGINFINITY: i32 = i32::MIN + 1;
 const WIN_SCORE: i32 = INFINITY;
+
+type FxDashMap<K, V> = DashMap<K, V, FxBuildHasher>;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Player {
@@ -304,12 +308,12 @@ struct Score {
 }
 
 pub struct Solver {
-    transpositions: FxHashMap<([Bitboard; 2], i32), Score>
+    transpositions: Arc<FxDashMap<([u64; 2], i32), Score>>
 }
 
 impl Solver {
     fn new() -> Solver {
-        Solver { transpositions: FxHashMap::default() }
+        Solver { transpositions: Arc::new(FxDashMap::default()) }
     }
 
     fn best_move(&mut self, board: &mut Board) -> Move {
@@ -317,32 +321,17 @@ impl Solver {
             Player::O => -1,
             Player::X => 1,
         };
-        let mut best_score = NEGINFINITY;
-        let mut best_move: Option<Move> = None;
-        let moves = board.generate_moves();
-        // moves.sort_by(|a, b| score_move(self, b).cmp(&score_move(self, a)));
-        // moves.sort_by_cached_key(|a| score_move(self, a));
-        // moves.reverse();
-        for mov in moves {
-            // log!("{}-{}", row, col);
-            board.placebit(mov);
-            let score = -self.negamax(board, WIN_SCORE, NEGINFINITY, INFINITY, player);
-            board.undo_move(mov);
-            // println!("{:?} score: {}", mov, score);
-            if score > best_score {
-                best_score = score;
-                best_move = Some(mov);
-            }
-        }
+        let moves: Vec<Move> = board.generate_moves().collect();
+        let best_move = moves.par_iter().max_by_key(|x| { let mut cloned_board = board.clone(); cloned_board.placebit(**x); -self.negamax(&mut cloned_board, WIN_SCORE, NEGINFINITY, INFINITY, player) });
         // println!("Evaluation: {}", match best_score.cmp(&0) {
         //     Ordering::Equal => "draw".to_string(),
         //     Ordering::Greater => format!("X wins in {} moves", (best_score - INFINITY) * -1),
         //     Ordering::Less => format!("O wins in {} moves", best_score * -1),
         // });
-        best_move.expect("No move was chosen")
+        *best_move.expect("No move was chosen")
     }
 
-    fn negamax(&mut self, board: &mut Board, depth: i32, mut alpha: i32, mut beta: i32, player: i8) -> i32 {
+    fn negamax(&self, board: &mut Board, depth: i32, mut alpha: i32, mut beta: i32, player: i8) -> i32 {
         let orig_alpha = alpha;
         if /*depth == 0 ||*/ board.over() {
             if board.draw() {
