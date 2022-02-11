@@ -35,7 +35,9 @@ fn test_algo8() {
 
     game.board.print(true);
 
-    assert_eq!(game.best_move(), game.pos_to_move((2, 1)));
+    let best_move = game.best_move();
+
+    assert!(best_move == game.pos_to_move((2, 1)) || best_move == game.pos_to_move((2, 2)));
 }
 
 #[test]
