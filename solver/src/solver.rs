@@ -1,9 +1,13 @@
-use std::{cmp::{max, min}, ops::Not, sync::Arc};
 use arrayvec::ArrayVec;
 use dashmap::DashMap;
 use fxhash::FxBuildHasher;
 use rayon::prelude::*;
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
+use std::{
+    cmp::{max, min},
+    ops::Not,
+    sync::Arc,
+};
 
 type Bitboard = u64; // Maximum board size is 7x8
 pub type Move = u64;
@@ -43,23 +47,24 @@ impl Iterator for Moves {
     fn next(&mut self) -> Option<Self::Item> {
         match self {
             Moves::XOMoves(ref moves, ref mut pos, ref used_bits) => {
-                for i in *pos..*used_bits as u64 { // probably wrong, but it works
+                for i in *pos..*used_bits as u64 {
+                    // probably wrong, but it works
                     let mov: Move = ((moves >> i) & 1) << i;
                     if mov != 0 {
                         *pos = i + 1;
                         return Some(mov);
                     }
                 }
-                return None
-            },
+                return None;
+            }
             Moves::C4Moves(ref moves, ref mut pos) => {
                 if *pos < moves.len() {
                     let mov = moves[*pos];
                     *pos += 1;
                     return Some(mov);
                 }
-                return None
-            },
+                return None;
+            }
         }
     }
 }
@@ -89,7 +94,7 @@ impl Game {
                 top_mask: generate_top_mask(width, height),
                 used_bits: (width * (height + 1)) as u8,
                 kind: BoardKind::XOBoard,
-                col_tops: vec![0; width as usize]
+                col_tops: vec![0; width as usize],
             },
             solver: Solver::new(),
         }
@@ -106,7 +111,7 @@ impl Game {
                 top_mask: generate_top_mask(width, height),
                 used_bits: (width * (height + 1)) as u8,
                 kind: BoardKind::C4Board,
-                col_tops: vec![0; width as usize]
+                col_tops: vec![0; width as usize],
             },
             solver: Solver::new(),
         }
@@ -114,15 +119,15 @@ impl Game {
 
     pub fn reset(&mut self, width: u32, height: u32, row: u32, kind: BoardKind) {
         self.board = Board {
-                width,
-                height,
-                row,
-                bitboards: [0, 0],
-                player: Player::X,
-                top_mask: generate_top_mask(width, height),
-                used_bits: (width * (height + 1)) as u8,
-                kind,
-                col_tops: vec![0; width as usize]
+            width,
+            height,
+            row,
+            bitboards: [0, 0],
+            player: Player::X,
+            top_mask: generate_top_mask(width, height),
+            used_bits: (width * (height + 1)) as u8,
+            kind,
+            col_tops: vec![0; width as usize],
         };
         self.solver = Solver::new();
     }
@@ -159,8 +164,13 @@ impl Game {
             Player::O => 1,
         };
 
-        let score = self.solver.negamax(&mut self.board, INFINITY, NEGINFINITY, INFINITY, player) * -player as i32;
-        if score == 0 { return 0; }
+        let score = self
+            .solver
+            .negamax(&mut self.board, INFINITY, NEGINFINITY, INFINITY, player)
+            * -player as i32;
+        if score == 0 {
+            return 0;
+        }
         match score < 0 {
             true => -WIN_SCORE - score,
             false => WIN_SCORE - score,
@@ -248,25 +258,33 @@ impl Board {
         let bitboard = self.bitboards[player as usize];
         let delta = self.row - 2;
         let vert = bitboard & (bitboard >> 1);
-        if vert & (vert >> delta) != 0 { return true; }
+        if vert & (vert >> delta) != 0 {
+            return true;
+        }
         let hori = bitboard & (bitboard >> (self.height + 1));
-        if hori & (hori >> delta * (self.height + 1)) != 0 { return true; }
+        if hori & (hori >> delta * (self.height + 1)) != 0 {
+            return true;
+        }
         let diag1 = bitboard & (bitboard >> self.height);
-        if diag1 & (diag1 >> delta * self.height) != 0 { return true; }
+        if diag1 & (diag1 >> delta * self.height) != 0 {
+            return true;
+        }
         let diag2 = bitboard & (bitboard >> (self.height + 2));
-        if diag2 & (diag2 >> delta * (self.height + 2)) != 0 { return true; }
+        if diag2 & (diag2 >> delta * (self.height + 2)) != 0 {
+            return true;
+        }
         return false;
     }
 
     pub fn over(&self) -> bool {
-        self.has_won(Player::X) ||
-            self.has_won(Player::O) ||
-            self.draw()
+        self.has_won(Player::X) || self.has_won(Player::O) || self.draw()
     }
 
     fn draw(&self) -> bool {
-        (self.bitboards[Player::X as usize] | self.bitboards[Player::O as usize])
-            .count_ones() == self.height * self.width && !self.has_won(Player::X) && !self.has_won(Player::O)
+        (self.bitboards[Player::X as usize] | self.bitboards[Player::O as usize]).count_ones()
+            == self.height * self.width
+            && !self.has_won(Player::X)
+            && !self.has_won(Player::O)
     }
 
     pub fn placebit(&mut self, mov: Move) {
@@ -276,7 +294,8 @@ impl Board {
                 self.player = !self.player;
             }
             BoardKind::C4Board => {
-                self.bitboards[self.player as usize] |= 1 << (self.col_tops[mov as usize] + mov * (self.height + 1) as u64);
+                self.bitboards[self.player as usize] |=
+                    1 << (self.col_tops[mov as usize] + mov * (self.height + 1) as u64);
                 self.col_tops[mov as usize] += 1;
                 self.player = !self.player;
             }
@@ -291,23 +310,35 @@ impl Board {
             }
             BoardKind::C4Board => {
                 self.col_tops[mov as usize] -= 1;
-                self.bitboards[!self.player as usize] ^= 1 << (self.col_tops[mov as usize] + mov * (self.height + 1) as u64);
+                self.bitboards[!self.player as usize] ^=
+                    1 << (self.col_tops[mov as usize] + mov * (self.height + 1) as u64);
                 self.player = !self.player;
             }
         }
     }
 
     pub fn generate_moves(&self) -> Moves {
-        match self.kind { // Probably not the best way of doing things
-            BoardKind::XOBoard => Moves::XOMoves((!(self.bitboards[0] | self.bitboards[1])) & !((!0 << (self.width * (self.height + 1))) | self.top_mask), 0, self.used_bits),
-            BoardKind::C4Board => {
-                Moves::C4Moves(self.col_tops.iter().enumerate().filter_map(|x| {
-                    if *x.1 < self.height as u64 {
-                        return Some(x.0 as Move);
-                    }
-                    None
-                }).collect(), 0)
-            }
+        match self.kind {
+            // Probably not the best way of doing things
+            BoardKind::XOBoard => Moves::XOMoves(
+                (!(self.bitboards[0] | self.bitboards[1]))
+                    & !((!0 << (self.width * (self.height + 1))) | self.top_mask),
+                0,
+                self.used_bits,
+            ),
+            BoardKind::C4Board => Moves::C4Moves(
+                self.col_tops
+                    .iter()
+                    .enumerate()
+                    .filter_map(|x| {
+                        if *x.1 < self.height as u64 {
+                            return Some(x.0 as Move);
+                        }
+                        None
+                    })
+                    .collect(),
+                0,
+            ),
         }
     }
 }
@@ -324,12 +355,14 @@ struct Score {
 }
 
 pub struct Solver {
-    transpositions: Arc<FxDashMap<([u64; 2], i32), Score>>
+    transpositions: Arc<FxDashMap<([u64; 2], i32), Score>>,
 }
 
 impl Solver {
     fn new() -> Solver {
-        Solver { transpositions: Arc::new(FxDashMap::default()) }
+        Solver {
+            transpositions: Arc::new(FxDashMap::default()),
+        }
     }
 
     fn best_move(&mut self, board: &mut Board) -> Move {
@@ -338,7 +371,11 @@ impl Solver {
             Player::X => 1,
         };
         let moves: Vec<Move> = board.generate_moves().collect();
-        let best_move = moves.par_iter().max_by_key(|x| { let mut cloned_board = board.clone(); cloned_board.placebit(**x); -self.negamax(&mut cloned_board, WIN_SCORE, NEGINFINITY, INFINITY, player) });
+        let best_move = moves.par_iter().max_by_key(|x| {
+            let mut cloned_board = board.clone();
+            cloned_board.placebit(**x);
+            -self.negamax(&mut cloned_board, WIN_SCORE, NEGINFINITY, INFINITY, player)
+        });
         // println!("Evaluation: {}", match best_score.cmp(&0) {
         //     Ordering::Equal => "draw".to_string(),
         //     Ordering::Greater => format!("X wins in {} moves", (best_score - INFINITY) * -1),
@@ -347,9 +384,18 @@ impl Solver {
         *best_move.expect("No move was chosen")
     }
 
-    fn negamax(&self, board: &mut Board, depth: i32, mut alpha: i32, mut beta: i32, player: i8) -> i32 {
+    fn negamax(
+        &self,
+        board: &mut Board,
+        depth: i32,
+        mut alpha: i32,
+        mut beta: i32,
+        player: i8,
+    ) -> i32 {
         let orig_alpha = alpha;
-        if /*depth == 0 ||*/ board.over() {
+        if
+        /*depth == 0 ||*/
+        board.over() {
             if board.draw() {
                 return 0;
             }
@@ -367,7 +413,6 @@ impl Solver {
             panic!();
         }
 
-
         if self.transpositions.contains_key(&(board.bitboards, depth)) {
             let position = self.transpositions.get(&(board.bitboards, depth)).unwrap();
             match position.kind {
@@ -377,7 +422,7 @@ impl Solver {
             }
 
             if alpha >= beta {
-                return position.value
+                return position.value;
             }
         }
 
@@ -401,14 +446,17 @@ impl Solver {
             }
         }
 
-        self.transpositions.insert((board.bitboards, depth), Score {
-            value,
-            kind: match value {
-                x if x <= orig_alpha => ScoreKind::UpperBound,
-                x if x >= beta => ScoreKind::LowerBound,
-                _ => ScoreKind::Exact,
-            }
-        });
+        self.transpositions.insert(
+            (board.bitboards, depth),
+            Score {
+                value,
+                kind: match value {
+                    x if x <= orig_alpha => ScoreKind::UpperBound,
+                    x if x >= beta => ScoreKind::LowerBound,
+                    _ => ScoreKind::Exact,
+                },
+            },
+        );
 
         // alpha
         value
