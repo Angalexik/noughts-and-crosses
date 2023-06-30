@@ -206,7 +206,7 @@ fn test_connect_4_move_generation() {
 
 #[test]
 fn test_xo_moves() {
-    let mut moves = Moves::XOMoves(0b11101110111, 0, 11);
+    let mut moves = Moves::new_xo(0b11101110111, 11);
     assert_eq!(moves.next().unwrap(), 0b1);
     assert_eq!(moves.next().unwrap(), 0b10);
     assert_eq!(moves.next().unwrap(), 0b100);

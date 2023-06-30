@@ -41,6 +41,12 @@ pub enum Moves {
     C4Moves(ArrayVec<Move, 10>, usize),
 }
 
+impl Moves {
+    pub fn new_xo(mov: Move, used_bits: u8) -> Moves {
+        Moves::XOMoves(mov, 0, used_bits)
+    }
+}
+
 impl Iterator for Moves {
     type Item = Move;
 
@@ -320,10 +326,9 @@ impl Board {
     pub fn generate_moves(&self) -> Moves {
         match self.kind {
             // Probably not the best way of doing things
-            BoardKind::XOBoard => Moves::XOMoves(
+            BoardKind::XOBoard => Moves::new_xo(
                 (!(self.bitboards[0] | self.bitboards[1]))
                     & !((!0 << (self.width * (self.height + 1))) | self.top_mask),
-                0,
                 self.used_bits,
             ),
             BoardKind::C4Board => Moves::C4Moves(
