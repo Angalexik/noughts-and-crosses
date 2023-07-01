@@ -288,10 +288,11 @@ impl Board {
     }
 
     pub fn over(&self) -> bool {
-        self.has_won(Player::X) || self.has_won(Player::O) || self.draw()
+        self.has_won(Player::X) || self.has_won(Player::O) || self.draw_probably()
     }
 
-    fn draw(&self) -> bool {
+    /// YOU NEED TO CHECK THAT NEITHER PLAYER IS ACTUALLY WINNING BEFOREHAND!!!!
+    fn draw_probably(&self) -> bool {
         (self.bitboards[Player::X as usize] | self.bitboards[Player::O as usize]).count_ones()
             == self.height * self.width
             && !self.has_won(Player::X)
@@ -402,28 +403,22 @@ impl Solver {
         player: i8,
     ) -> i32 {
         let orig_alpha = alpha;
-        if
-        /*depth == 0 ||*/
-        board.over() {
-            if board.draw() {
-                return 0;
-            }
 
-            if board.has_won(Player::X) {
-                // return (INFINITY - 1) * (player as i32)
-                return -(depth) * (player as i32);
-            }
-
-            if board.has_won(Player::O) {
-                // return (NEGINFINITY + 1) * (player as i32);
-                return (depth) * (player as i32);
-            }
-
-            panic!();
+        if board.has_won(Player::X) {
+            // return (INFINITY - 1) * (player as i32)
+            return -(depth) * (player as i32);
         }
 
-        if self.transpositions.contains_key(&(board.bitboards, depth)) {
-            let position = self.transpositions.get(&(board.bitboards, depth)).unwrap();
+        if board.has_won(Player::O) {
+            // return (NEGINFINITY + 1) * (player as i32);
+            return (depth) * (player as i32);
+        }
+
+        if board.draw_probably() {
+            return 0;
+        }
+
+        if let Some(position) = self.transpositions.get(&(board.bitboards, depth)) {
             match position.kind {
                 ScoreKind::Exact => return position.value,
                 ScoreKind::LowerBound => alpha = max(alpha, position.value),
