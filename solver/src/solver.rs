@@ -6,7 +6,6 @@ use serde::{Deserialize, Serialize};
 use std::{
     cmp::{max, min},
     ops::Not,
-    sync::Arc,
 };
 
 type Bitboard = u64; // Maximum board size is 7x8
@@ -360,13 +359,13 @@ struct Score {
 }
 
 pub struct Solver {
-    transpositions: Arc<FxDashMap<([u64; 2], i32), Score>>,
+    transpositions: FxDashMap<([u64; 2], i32), Score>,
 }
 
 impl Solver {
     fn new() -> Solver {
         Solver {
-            transpositions: Arc::new(FxDashMap::default()),
+            transpositions: FxDashMap::default(),
         }
     }
 
