@@ -1,5 +1,5 @@
 use arrayvec::ArrayVec;
-use solver::{Moves, Game, Move};
+use solver::{Game, Move, Moves};
 
 macro_rules! arrayvec {
     ( $( $x:expr ),* ) => {
@@ -201,12 +201,15 @@ fn test_not_over() {
 fn test_connect_4_move_generation() {
     let game = Game::new_connect_four(3, 3, 3);
 
-    assert_eq!(game.board.generate_moves(), Moves::C4Moves(arrayvec![0, 1, 2], 0))
+    assert_eq!(
+        game.board.generate_moves(),
+        Moves::C4Moves(arrayvec![0, 1, 2], 0)
+    )
 }
 
 #[test]
 fn test_xo_moves() {
-    let mut moves = Moves::new_xo(0b11101110111, 11);
+    let mut moves = Moves::new_xo(0b11101110111);
     assert_eq!(moves.next().unwrap(), 0b1);
     assert_eq!(moves.next().unwrap(), 0b10);
     assert_eq!(moves.next().unwrap(), 0b100);
@@ -218,7 +221,7 @@ fn test_xo_moves() {
 
 #[test]
 fn test_c4_moves() {
-    let mut moves = Moves::C4Moves(arrayvec![1,2,3,4], 0);
+    let mut moves = Moves::C4Moves(arrayvec![1, 2, 3, 4], 0);
     assert_eq!(moves.next().unwrap(), 1);
     assert_eq!(moves.next().unwrap(), 2);
     assert_eq!(moves.next().unwrap(), 3);
@@ -295,7 +298,7 @@ fn test_scoring_x_win() {
 
 #[test]
 fn test_scoring_o_win() {
-    let mut game = Game::new_xo(3, 3,3);
+    let mut game = Game::new_xo(3, 3, 3);
 
     game.place((1, 1));
     game.place((0, 0));
