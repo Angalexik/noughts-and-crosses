@@ -35,3 +35,9 @@ serde = { version = "1.0", features = ["derive"] }
 [profile.release]
 debug = 1
 opt-level = 3
+panic = "abort"
+
+[profile.bench]
+debug = true
+opt-level = 3
+panic = "abort"
