@@ -36,13 +36,13 @@ impl Not for Player {
 
 #[derive(PartialEq, Eq, Debug)]
 pub enum Moves {
-    XOMoves(Move, u64, u8),
+    XOMoves(Move, u64),
     C4Moves(ArrayVec<Move, 10>, usize),
 }
 
 impl Moves {
-    pub fn new_xo(mov: Move, used_bits: u8) -> Moves {
-        Moves::XOMoves(mov, 0, used_bits)
+    pub fn new_xo(mov: Move) -> Moves {
+        Moves::XOMoves(mov, 1)
     }
 }
 
@@ -51,16 +51,22 @@ impl Iterator for Moves {
 
     fn next(&mut self) -> Option<Self::Item> {
         match self {
-            Moves::XOMoves(ref moves, ref mut pos, ref used_bits) => {
-                for i in *pos..*used_bits as u64 {
-                    // probably wrong, but it works
-                    let mov: Move = ((moves >> i) & 1) << i;
-                    if mov != 0 {
-                        *pos = i + 1;
-                        return Some(mov);
-                    }
+            Moves::XOMoves(ref mut moves, ref mut pos) => {
+                // println!("{moves}");
+
+                if *moves == 0 {
+                    return None;
                 }
-                return None;
+
+                let mut mov: Move = *moves & *pos;
+                *pos <<= 1;
+                while mov == 0 {
+                    mov = *moves & *pos;
+                    *pos <<= 1;
+                }
+                *moves &= !(*pos >> 1);
+
+                return Some(mov);
             }
             Moves::C4Moves(ref moves, ref mut pos) => {
                 if *pos < moves.len() {
@@ -328,7 +334,6 @@ impl Board {
             BoardKind::XOBoard => Moves::new_xo(
                 (!(self.bitboards[0] | self.bitboards[1]))
                     & !((!0 << (self.width * (self.height + 1))) | self.top_mask),
-                self.used_bits,
             ),
             BoardKind::C4Board => Moves::C4Moves(
                 self.col_tops
