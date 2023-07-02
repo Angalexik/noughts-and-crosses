@@ -295,8 +295,6 @@ impl Board {
     fn draw_probably(&self) -> bool {
         (self.bitboards[Player::X as usize] | self.bitboards[Player::O as usize]).count_ones()
             == self.height * self.width
-            && !self.has_won(Player::X)
-            && !self.has_won(Player::O)
     }
 
     pub fn placebit(&mut self, mov: Move) {
@@ -365,7 +363,7 @@ struct Score {
 }
 
 pub struct Solver {
-    transpositions: FxDashMap<([u64; 2], i32), Score>,
+    transpositions: FxDashMap<[u64; 2], Score>,
 }
 
 impl Solver {
@@ -418,7 +416,7 @@ impl Solver {
             return 0;
         }
 
-        if let Some(position) = self.transpositions.get(&(board.bitboards, depth)) {
+        if let Some(position) = self.transpositions.get(&(board.bitboards)) {
             match position.kind {
                 ScoreKind::Exact => return position.value,
                 ScoreKind::LowerBound => alpha = max(alpha, position.value),
@@ -451,7 +449,7 @@ impl Solver {
         }
 
         self.transpositions.insert(
-            (board.bitboards, depth),
+            board.bitboards,
             Score {
                 value,
                 kind: match value {
