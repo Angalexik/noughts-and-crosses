@@ -1,10 +1,12 @@
 use arrayvec::ArrayVec;
 use dashmap::DashMap;
-use fxhash::FxBuildHasher;
+use nohash_hasher::NoHashHasher;
 use rayon::prelude::*;
 use serde::{Deserialize, Serialize};
 use std::{
     cmp::{max, min},
+    hash::BuildHasherDefault,
+    iter::repeat_with,
     ops::Not,
 };
 
@@ -15,7 +17,7 @@ const INFINITY: i32 = i32::MAX;
 const NEGINFINITY: i32 = i32::MIN + 1;
 const WIN_SCORE: i32 = INFINITY;
 
-type FxDashMap<K, V> = DashMap<K, V, FxBuildHasher>;
+type FxDashMap<K, V> = DashMap<K, V, BuildHasherDefault<NoHashHasher<u64>>>;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Player {
@@ -96,50 +98,20 @@ pub struct Game {
 impl Game {
     pub fn new_xo(width: u32, height: u32, row: u32) -> Game {
         Game {
-            board: Board {
-                width,
-                height,
-                row,
-                bitboards: [0, 0],
-                player: Player::X,
-                top_mask: generate_top_mask(width, height),
-                used_bits: (width * (height + 1)) as u8,
-                kind: BoardKind::XOBoard,
-                col_tops: vec![0; width as usize],
-            },
+            board: Board::new(width, height, row, BoardKind::XOBoard),
             solver: Solver::new(),
         }
     }
 
     pub fn new_connect_four(width: u32, height: u32, row: u32) -> Game {
         Game {
-            board: Board {
-                width,
-                height,
-                row,
-                bitboards: [0, 0],
-                player: Player::X,
-                top_mask: generate_top_mask(width, height),
-                used_bits: (width * (height + 1)) as u8,
-                kind: BoardKind::C4Board,
-                col_tops: vec![0; width as usize],
-            },
+            board: Board::new(width, height, row, BoardKind::C4Board),
             solver: Solver::new(),
         }
     }
 
     pub fn reset(&mut self, width: u32, height: u32, row: u32, kind: BoardKind) {
-        self.board = Board {
-            width,
-            height,
-            row,
-            bitboards: [0, 0],
-            player: Player::X,
-            top_mask: generate_top_mask(width, height),
-            used_bits: (width * (height + 1)) as u8,
-            kind,
-            col_tops: vec![0; width as usize],
-        };
+        self.board = Board::new(width, height, row, kind);
         self.solver = Solver::new();
     }
 
@@ -201,14 +173,40 @@ pub struct Board {
     height: u32,
     row: u32,
     pub bitboards: [Bitboard; 2],
+    zobrist: u64,
     player: Player,
     top_mask: Bitboard,
-    used_bits: u8,
     col_tops: Vec<u64>,
     kind: BoardKind,
+    x_numbers: Box<[u64]>,
+    o_numbers: Box<[u64]>,
 }
 
 impl Board {
+    fn new(width: u32, height: u32, row: u32, kind: BoardKind) -> Board {
+        let mut rng = fastrand::Rng::with_seed(4);
+
+        Board {
+            width,
+            height,
+            row,
+            bitboards: [0, 0],
+            zobrist: 0,
+            player: Player::X,
+            top_mask: generate_top_mask(width, height),
+            kind,
+            col_tops: vec![0; width as usize],
+            x_numbers: repeat_with(|| rng.u64(..))
+                .take((width * (height + 1)) as usize)
+                .collect::<Vec<u64>>()
+                .into_boxed_slice(),
+            o_numbers: repeat_with(|| rng.u64(..))
+                .take((width * (height + 1)) as usize)
+                .collect::<Vec<u64>>()
+                .into_boxed_slice(),
+        }
+    }
+
     fn can_play(&self, mov: Move) -> bool {
         match self.kind {
             BoardKind::XOBoard => !self.over() && !self.occupied(mov),
@@ -301,6 +299,10 @@ impl Board {
         match self.kind {
             BoardKind::XOBoard => {
                 self.bitboards[self.player as usize] |= mov;
+                match self.player {
+                    Player::X => self.zobrist ^= self.x_numbers[mov.trailing_zeros() as usize],
+                    Player::O => self.zobrist ^= self.o_numbers[mov.trailing_zeros() as usize],
+                }
                 self.player = !self.player;
             }
             BoardKind::C4Board => {
@@ -316,6 +318,10 @@ impl Board {
         match self.kind {
             BoardKind::XOBoard => {
                 self.bitboards[(!self.player) as usize] ^= mov;
+                match !self.player {
+                    Player::X => self.zobrist ^= self.x_numbers[mov.trailing_zeros() as usize],
+                    Player::O => self.zobrist ^= self.o_numbers[mov.trailing_zeros() as usize],
+                }
                 self.player = !self.player;
             }
             BoardKind::C4Board => {
@@ -363,7 +369,7 @@ struct Score {
 }
 
 pub struct Solver {
-    transpositions: FxDashMap<[u64; 2], Score>,
+    transpositions: FxDashMap<u64, Score>,
 }
 
 impl Solver {
@@ -401,6 +407,11 @@ impl Solver {
         player: i8,
     ) -> i32 {
         let orig_alpha = alpha;
+        // println!(
+        //     "[{0}, {1}]",
+        //     board.bitboards[Player::X as usize],
+        //     board.bitboards[Player::O as usize]
+        // );
 
         if board.has_won(Player::X) {
             // return (INFINITY - 1) * (player as i32)
@@ -416,7 +427,7 @@ impl Solver {
             return 0;
         }
 
-        if let Some(position) = self.transpositions.get(&(board.bitboards)) {
+        if let Some(position) = self.transpositions.get(&board.zobrist) {
             match position.kind {
                 ScoreKind::Exact => return position.value,
                 ScoreKind::LowerBound => alpha = max(alpha, position.value),
@@ -449,7 +460,7 @@ impl Solver {
         }
 
         self.transpositions.insert(
-            board.bitboards,
+            board.zobrist,
             Score {
                 value,
                 kind: match value {
