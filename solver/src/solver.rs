@@ -198,12 +198,10 @@ impl Board {
             col_tops: vec![0; width as usize],
             x_numbers: repeat_with(|| rng.u64(..))
                 .take((width * (height + 1)) as usize)
-                .collect::<Vec<u64>>()
-                .into_boxed_slice(),
+                .collect(),
             o_numbers: repeat_with(|| rng.u64(..))
                 .take((width * (height + 1)) as usize)
-                .collect::<Vec<u64>>()
-                .into_boxed_slice(),
+                .collect(),
         }
     }
 
