@@ -6,8 +6,9 @@ use serde::{Deserialize, Serialize};
 use std::{
     cmp::{max, min},
     hash::BuildHasherDefault,
-    iter::repeat_with,
+    iter::{self, repeat_with},
     ops::Not,
+    sync::atomic::{AtomicU64, Ordering},
 };
 
 type Bitboard = u64; // Maximum board size is 7x8
@@ -18,6 +19,41 @@ const NEGINFINITY: i32 = i32::MIN + 1;
 const WIN_SCORE: i32 = INFINITY;
 
 type FxDashMap<K, V> = DashMap<K, V, BuildHasherDefault<NoHashHasher<u64>>>;
+
+struct FunnyTable {
+    size: usize,
+    data: Vec<AtomicU64>,
+    keys: Vec<AtomicU64>,
+}
+
+impl FunnyTable {
+    fn insert(&self, hash: u64, score: Score) {
+        let index = (hash as usize) % self.size;
+        self.keys[index].store(hash ^ score.as_u64(), Ordering::Relaxed);
+        self.data[index].store(score.as_u64(), Ordering::Relaxed);
+    }
+
+    fn get(&self, hash: u64) -> Option<Score> {
+        let index = (hash as usize) % self.size;
+        let data = self.data[index].load(Ordering::Relaxed);
+        if self.keys[index].load(Ordering::Relaxed) ^ data == hash {
+            return Some(Score::from_u64(data));
+        }
+
+        None
+    }
+
+    fn clear(&mut self) {
+        self.data = iter::repeat(0)
+            .map(|x| AtomicU64::new(x))
+            .take(1_000_000)
+            .collect();
+        self.keys = iter::repeat(0)
+            .map(|x| AtomicU64::new(x))
+            .take(1_000_000)
+            .collect();
+    }
+}
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Player {
@@ -355,25 +391,59 @@ impl Board {
     }
 }
 
+#[derive(Copy, Clone, PartialEq, Debug)]
 enum ScoreKind {
-    Exact,
-    LowerBound,
-    UpperBound,
+    Exact = 0,
+    LowerBound = 1,
+    UpperBound = 2,
 }
 
+#[derive(PartialEq, Debug)]
 struct Score {
     value: i32,
     kind: ScoreKind,
 }
 
+impl Score {
+    fn as_u64(&self) -> u64 {
+        let mut combined: [u8; 8] = [0; 8];
+        combined[..4].clone_from_slice(&self.value.to_ne_bytes());
+        combined[4..].clone_from_slice(&(self.kind as u32).to_ne_bytes());
+        u64::from_ne_bytes(combined)
+    }
+
+    fn from_u64(number: u64) -> Score {
+        let bytes = number.to_ne_bytes();
+        Score {
+            value: i32::from_ne_bytes(bytes[..4].try_into().unwrap()),
+            kind: match u32::from_ne_bytes(bytes[4..].try_into().unwrap()) {
+                0 => ScoreKind::Exact,
+                1 => ScoreKind::LowerBound,
+                2 => ScoreKind::UpperBound,
+                _ => unreachable!("Bruh"),
+            },
+        }
+    }
+}
+
 pub struct Solver {
-    transpositions: FxDashMap<u64, Score>,
+    transpositions: FunnyTable,
 }
 
 impl Solver {
     fn new() -> Solver {
         Solver {
-            transpositions: FxDashMap::default(),
+            transpositions: FunnyTable {
+                size: 1_000_000,
+                data: iter::repeat(0)
+                    .map(|x| AtomicU64::new(x))
+                    .take(1_000_000)
+                    .collect(),
+                keys: iter::repeat(0)
+                    .map(|x| AtomicU64::new(x))
+                    .take(1_000_000)
+                    .collect(),
+            },
         }
     }
 
@@ -425,7 +495,7 @@ impl Solver {
             return 0;
         }
 
-        if let Some(position) = self.transpositions.get(&board.zobrist) {
+        if let Some(position) = self.transpositions.get(board.zobrist) {
             match position.kind {
                 ScoreKind::Exact => return position.value,
                 ScoreKind::LowerBound => alpha = max(alpha, position.value),
