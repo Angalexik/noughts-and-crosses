@@ -20,21 +20,29 @@ const WIN_SCORE: i32 = INFINITY;
 
 type FxDashMap<K, V> = DashMap<K, V, BuildHasherDefault<NoHashHasher<u64>>>;
 
-struct FunnyTable {
-    size: usize,
+const TT_SIZE: usize = 2_000_000_000 / 8; // 2 GB
+
+pub struct FunnyTable {
     data: Vec<AtomicU64>,
     keys: Vec<AtomicU64>,
 }
 
 impl FunnyTable {
+    pub fn new() -> FunnyTable {
+        FunnyTable {
+            data: repeat_with(AtomicU64::default).take(TT_SIZE).collect(),
+            keys: repeat_with(AtomicU64::default).take(TT_SIZE).collect(),
+        }
+    }
+
     fn insert(&self, hash: u64, score: Score) {
-        let index = (hash as usize) % self.size;
+        let index = (hash as usize) % TT_SIZE;
         self.keys[index].store(hash ^ score.as_u64(), Ordering::Relaxed);
         self.data[index].store(score.as_u64(), Ordering::Relaxed);
     }
 
     fn get(&self, hash: u64) -> Option<Score> {
-        let index = (hash as usize) % self.size;
+        let index = (hash as usize) % TT_SIZE;
         let data = self.data[index].load(Ordering::Relaxed);
         if self.keys[index].load(Ordering::Relaxed) ^ data == hash {
             return Some(Score::from_u64(data));
@@ -44,14 +52,8 @@ impl FunnyTable {
     }
 
     fn clear(&mut self) {
-        self.data = iter::repeat(0)
-            .map(|x| AtomicU64::new(x))
-            .take(1_000_000)
-            .collect();
-        self.keys = iter::repeat(0)
-            .map(|x| AtomicU64::new(x))
-            .take(1_000_000)
-            .collect();
+        self.data.fill_with(AtomicU64::default);
+        self.keys.fill_with(AtomicU64::default);
     }
 }
 
@@ -433,17 +435,7 @@ pub struct Solver {
 impl Solver {
     fn new() -> Solver {
         Solver {
-            transpositions: FunnyTable {
-                size: 1_000_000,
-                data: iter::repeat(0)
-                    .map(|x| AtomicU64::new(x))
-                    .take(1_000_000)
-                    .collect(),
-                keys: iter::repeat(0)
-                    .map(|x| AtomicU64::new(x))
-                    .take(1_000_000)
-                    .collect(),
-            },
+            transpositions: FunnyTable::new(),
         }
     }
 
