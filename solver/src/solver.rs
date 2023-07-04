@@ -1,12 +1,9 @@
 use arrayvec::ArrayVec;
-use dashmap::DashMap;
-use nohash_hasher::NoHashHasher;
 use rayon::prelude::*;
 use serde::{Deserialize, Serialize};
 use std::{
     cmp::{max, min},
-    hash::BuildHasherDefault,
-    iter::{self, repeat_with},
+    iter::repeat_with,
     ops::Not,
     sync::atomic::{AtomicU64, Ordering},
 };
@@ -17,8 +14,6 @@ pub type Move = u64;
 const INFINITY: i32 = i32::MAX;
 const NEGINFINITY: i32 = i32::MIN + 1;
 const WIN_SCORE: i32 = INFINITY;
-
-type FxDashMap<K, V> = DashMap<K, V, BuildHasherDefault<NoHashHasher<u64>>>;
 
 const TT_SIZE: usize = 2_000_000_000 / 8; // 2 GB
 
@@ -106,7 +101,7 @@ impl Iterator for Moves {
                 }
                 *moves &= !(*pos >> 1);
 
-                return Some(mov);
+                Some(mov)
             }
             Moves::C4Moves(ref moves, ref mut pos) => {
                 if *pos < moves.len() {
@@ -114,7 +109,7 @@ impl Iterator for Moves {
                     *pos += 1;
                     return Some(mov);
                 }
-                return None;
+                None
             }
         }
     }
@@ -307,18 +302,18 @@ impl Board {
             return true;
         }
         let hori = bitboard & (bitboard >> (self.height + 1));
-        if hori & (hori >> delta * (self.height + 1)) != 0 {
+        if hori & (hori >> (delta * (self.height + 1))) != 0 {
             return true;
         }
         let diag1 = bitboard & (bitboard >> self.height);
-        if diag1 & (diag1 >> delta * self.height) != 0 {
+        if diag1 & (diag1 >> (delta * self.height)) != 0 {
             return true;
         }
         let diag2 = bitboard & (bitboard >> (self.height + 2));
-        if diag2 & (diag2 >> delta * (self.height + 2)) != 0 {
+        if diag2 & (diag2 >> (delta * (self.height + 2))) != 0 {
             return true;
         }
-        return false;
+        false
     }
 
     pub fn over(&self) -> bool {

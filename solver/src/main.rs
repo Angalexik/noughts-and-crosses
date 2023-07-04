@@ -1,9 +1,9 @@
 use itertools::Itertools;
 use rustyline::Editor;
 use solver::Move;
+use std::env;
 use std::process::exit;
 use std::time::Instant;
-use std::env;
 
 fn check_game_end(game: &solver::Game) {
     if game.board.over() {
@@ -21,7 +21,9 @@ fn check_game_end(game: &solver::Game) {
 }
 
 fn evaluation(eval: i32) -> String {
-    if eval == 0 { return "Draw".to_string() }
+    if eval == 0 {
+        return "Draw".to_string();
+    }
 
     // 1 turns lol
     match eval < 0 {
@@ -45,8 +47,10 @@ fn main() {
     let game_kind = env::args().nth(1).unwrap();
     let args: Vec<u32> = env::args()
         .skip(2)
-        .map(|a| a.parse::<u32>()
-             .expect("First three arguments need to numbers"))
+        .map(|a| {
+            a.parse::<u32>()
+                .expect("First three arguments need to numbers")
+        })
         .collect();
     // println!("{:#?}", args);
     let mut rl = Editor::<()>::new();
@@ -54,7 +58,7 @@ fn main() {
     let mut game = match game_kind.as_str() {
         "xo" => solver::Game::new_xo(args[0], args[1], args[2]),
         "c4" => solver::Game::new_connect_four(args[0], args[1], args[2]),
-        _ => panic!()
+        _ => panic!(),
     };
 
     if let Ok(answer) = rl.readline("X or O? ") {
@@ -70,16 +74,17 @@ fn main() {
 
         match readline {
             Ok(line) => {
-                let mov: Move;
-                if game_kind.as_str() == "xo" {
-                    let pos: (u32, u32) = (line.splitn(2, '-') // converts "m-n" to (m, n) using rust magic
+                let mov: Move = if game_kind.as_str() == "xo" {
+                    let pos: (u32, u32) = (line
+                        .splitn(2, '-') // converts "m-n" to (m, n) using rust magic
                         .map(|num| num.parse::<u32>().unwrap())
                         .collect_tuple())
-                        .unwrap();
-                    mov = game.pos_to_move(pos);
+                    .unwrap();
+                    game.pos_to_move(pos)
                 } else {
-                    mov = line.parse().unwrap();
-                }
+                    line.parse().unwrap()
+                };
+
                 if game.can_play(mov) {
                     game.placebit(mov);
                     check_game_end(&game);
@@ -87,11 +92,11 @@ fn main() {
                 } else {
                     println!("you can't play that")
                 }
-            },
+            }
             Err(_) => {
                 println!("oh no");
                 break;
-            },
+            }
         }
     }
 }
