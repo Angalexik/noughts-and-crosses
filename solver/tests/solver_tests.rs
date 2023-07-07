@@ -1,17 +1,4 @@
-use arrayvec::ArrayVec;
-use solver::{Game, Move, Moves};
-
-macro_rules! arrayvec {
-    ( $( $x:expr ),* ) => {
-        {
-            let mut temp_vec = ArrayVec::<Move, 10>::new();
-            $(
-                temp_vec.push($x);
-            )*
-            temp_vec
-        }
-    };
-}
+use solver::{Game, Moves};
 
 #[test]
 fn test_heuristics() {
@@ -203,7 +190,7 @@ fn test_connect_4_move_generation() {
 
     assert_eq!(
         game.board.generate_moves(),
-        Moves::C4Moves(arrayvec![0, 1, 2], 0)
+        Moves::C4Moves(vec![0, 1, 2])
     )
 }
 
@@ -221,11 +208,11 @@ fn test_xo_moves() {
 
 #[test]
 fn test_c4_moves() {
-    let mut moves = Moves::C4Moves(arrayvec![1, 2, 3, 4], 0);
-    assert_eq!(moves.next().unwrap(), 1);
-    assert_eq!(moves.next().unwrap(), 2);
-    assert_eq!(moves.next().unwrap(), 3);
+    let mut moves = Moves::C4Moves(vec![1, 2, 3, 4]);
     assert_eq!(moves.next().unwrap(), 4);
+    assert_eq!(moves.next().unwrap(), 3);
+    assert_eq!(moves.next().unwrap(), 2);
+    assert_eq!(moves.next().unwrap(), 1);
 }
 
 #[test]

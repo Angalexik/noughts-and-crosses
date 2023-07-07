@@ -1,4 +1,3 @@
-use arrayvec::ArrayVec;
 use rayon::prelude::*;
 use serde::{Deserialize, Serialize};
 use std::{
@@ -72,7 +71,7 @@ impl Not for Player {
 #[derive(PartialEq, Eq, Debug)]
 pub enum Moves {
     XOMoves(Move, u64),
-    C4Moves(ArrayVec<Move, 10>, usize),
+    C4Moves(Vec<Move>),
 }
 
 impl Moves {
@@ -103,14 +102,7 @@ impl Iterator for Moves {
 
                 Some(mov)
             }
-            Moves::C4Moves(ref moves, ref mut pos) => {
-                if *pos < moves.len() {
-                    let mov = moves[*pos];
-                    *pos += 1;
-                    return Some(mov);
-                }
-                None
-            }
+            Moves::C4Moves(ref mut moves) => moves.pop(),
         }
     }
 }
@@ -382,7 +374,6 @@ impl Board {
                         None
                     })
                     .collect(),
-                0,
             ),
         }
     }
