@@ -5,6 +5,8 @@ use std::env;
 use std::process::exit;
 use std::time::Instant;
 
+const TT_SIZE: usize = 4_000_000_000 / 8; // 4 GB
+
 fn check_game_end(game: &solver::Game) {
     if game.board.over() {
         game.board.print(false);
@@ -55,9 +57,10 @@ fn main() {
     // println!("{:#?}", args);
     let mut rl = Editor::<()>::new();
     // let mut game = solver::Game::new_xo(args[0], args[1], args[2]);
+    println!("Initialising game (this may take a while...)");
     let mut game = match game_kind.as_str() {
-        "xo" => solver::Game::new_xo(args[0], args[1], args[2]),
-        "c4" => solver::Game::new_connect_four(args[0], args[1], args[2]),
+        "xo" => solver::Game::xo_with_size(args[0], args[1], args[2], TT_SIZE),
+        "c4" => solver::Game::connect_four_with_size(args[0], args[1], args[2], TT_SIZE),
         _ => panic!(),
     };
 

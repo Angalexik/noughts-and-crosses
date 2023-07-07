@@ -14,7 +14,7 @@ const INFINITY: i32 = i32::MAX;
 const NEGINFINITY: i32 = i32::MIN + 1;
 const WIN_SCORE: i32 = INFINITY;
 
-const TT_SIZE: usize = 2_000_000_000 / 8; // 2 GB
+const TT_SIZE: usize = 200_000_000 / 8; // 200 MB
 
 pub struct FunnyTable {
     data: Vec<AtomicU64>,
@@ -22,10 +22,10 @@ pub struct FunnyTable {
 }
 
 impl FunnyTable {
-    pub fn new() -> FunnyTable {
+    pub fn new(size: usize) -> FunnyTable {
         FunnyTable {
-            data: repeat_with(AtomicU64::default).take(TT_SIZE).collect(),
-            keys: repeat_with(AtomicU64::default).take(TT_SIZE).collect(),
+            data: repeat_with(AtomicU64::default).take(size).collect(),
+            keys: repeat_with(AtomicU64::default).take(size).collect(),
         }
     }
 
@@ -48,6 +48,12 @@ impl FunnyTable {
     fn clear(&mut self) {
         self.data.fill_with(AtomicU64::default);
         self.keys.fill_with(AtomicU64::default);
+    }
+}
+
+impl Default for FunnyTable {
+    fn default() -> Self {
+        Self::new(TT_SIZE)
     }
 }
 
@@ -132,6 +138,20 @@ impl Game {
         Game {
             board: Board::new(width, height, row, BoardKind::C4Board),
             solver: Solver::new(),
+        }
+    }
+
+    pub fn xo_with_size(width: u32, height: u32, row: u32, size: usize) -> Game {
+        Game {
+            board: Board::new(width, height, row, BoardKind::XOBoard),
+            solver: Solver::with_tt_size(size),
+        }
+    }
+
+    pub fn connect_four_with_size(width: u32, height: u32, row: u32, size: usize) -> Game {
+        Game {
+            board: Board::new(width, height, row, BoardKind::C4Board),
+            solver: Solver::with_tt_size(size),
         }
     }
 
@@ -421,7 +441,13 @@ pub struct Solver {
 impl Solver {
     fn new() -> Solver {
         Solver {
-            transpositions: FunnyTable::new(),
+            transpositions: FunnyTable::default(),
+        }
+    }
+
+    fn with_tt_size(size: usize) -> Solver {
+        Solver {
+            transpositions: FunnyTable::new(size),
         }
     }
 
